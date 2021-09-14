@@ -1,0 +1,30 @@
+﻿<UserControl 
+	x:Class="KsWare.CryptoPad.TextEditor.TextBoxControllerView"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:system="clr-namespace:System;assembly=System.Runtime"
+	xmlns:textEditor="clr-namespace:KsWare.CryptoPad.TextEditor"
+	mc:Ignorable="d"
+	d:DataContext="{d:DesignInstance textEditor:TextBoxControllerVM, IsDesignTimeCreatable=False}"
+	d:DesignHeight="200" d:DesignWidth="400">
+	<DockPanel Margin="3 0 3 3">
+		<!-- <DockPanel DockPanel.Dock="Top" LastChildFill="False"> -->
+		<!-- 	<Label Content="Size:" Margin="10 0 0 0"/> -->
+		<!-- 	<ComboBox x:Name="FontSizeComboBox" SelectedIndex="4" Width="45" VerticalAlignment="Center"> -->
+		<!-- 		<system:Double>8</system:Double> -->
+		<!-- 		<system:Double>9</system:Double> -->
+		<!-- 		<system:Double>10</system:Double> -->
+		<!-- 		<system:Double>11</system:Double> -->
+		<!-- 		<system:Double>12</system:Double> -->
+		<!-- 		<system:Double>14</system:Double> -->
+		<!-- 		<system:Double>16</system:Double> -->
+		<!-- 	</ComboBox> -->
+		<!-- </DockPanel> -->
+		<TextBox 
+			x:Name="TextBox"  
+			Text="{Binding Text}"
+		    AcceptsReturn="True" AcceptsTab="True" FontFamily="Consolas" FontSize="{Binding ElementName=FontSizeComboBox, Path=SelectedItem}" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible"/>
+	</DockPanel>
+</UserControl>

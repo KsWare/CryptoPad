@@ -1,0 +1,48 @@
+﻿<Window x:Class="KsWare.CryptoPad.ShellView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:system="clr-namespace:System;assembly=System.Runtime"
+    xmlns:txt="clr-namespace:KsWare.CryptoPad.TextEditor"
+    xmlns:tbl="clr-namespace:KsWare.CryptoPad.TableEditor"
+    xmlns:rtf="clr-namespace:KsWare.CryptoPad.RichTextEditor"
+    xmlns:cryptoPad="clr-namespace:KsWare.CryptoPad"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance cryptoPad:ShellVM, IsDesignTimeCreatable=False}"
+    Title="Crypto Pad" Height="200" Width="400" Icon="/app.ico">
+	<Window.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="/KsWare.Presentation.ViewFramework;component/Resources/ViewModelStyles/MenuItemVMStyle.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Window.Resources>
+	<DockPanel>
+		<Menu DockPanel.Dock="Top" ItemsSource="{Binding Menu}" ItemContainerStyle="{DynamicResource MenuItemVMStyle}"/>
+	    <TabControl ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}" TabStripPlacement="Top" Margin="3 0 3 3">
+			<TabControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Header.Value}"/>
+                </DataTemplate>
+			</TabControl.ItemTemplate>
+		    <TabControl.ContentTemplate>
+			    <DataTemplate>
+					<DataTemplate.Resources>
+			            <DataTemplate DataType="{x:Type txt:TextEditorVM}">
+				            <txt:TextEditorView />
+			            </DataTemplate>
+				        <DataTemplate DataType="{x:Type rtf:RichTextEditorVM}">
+					        <rtf:RichTextEditorView />
+				        </DataTemplate>
+				        <DataTemplate DataType="{x:Type tbl:TableEditorVM}">
+					        <tbl:TableEditorView />
+				        </DataTemplate>
+					</DataTemplate.Resources>
+				    <ContentPresenter Content="{Binding Content}"/>
+			    </DataTemplate>
+		    </TabControl.ContentTemplate>
+
+	    </TabControl>
+    </DockPanel>
+</Window>

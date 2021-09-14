@@ -1,0 +1,10 @@
+﻿<ksv:ViewModelApplication
+	x:TypeArguments="cryptoPad:AppVM" x:Class="KsWare.CryptoPad.App"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:ksv="http://ksware.de/Presentation/ViewFramework"
+	xmlns:cryptoPad="clr-namespace:KsWare.CryptoPad">
+    <Application.Resources>
+         
+    </Application.Resources>
+</ksv:ViewModelApplication>
