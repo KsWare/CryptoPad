@@ -1,34 +1,18 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using JetBrains.Annotations;
-using KsWare.Presentation.ViewModelFramework;
 using Microsoft.Win32;
 
 namespace KsWare.CryptoPad.TextEditor {
 
-	public class TextEditorVM:TabVM {
-		private string _fileName;
-		private string _readOnlyFileName;
+	public class TextEditorVM : FileTabItemVM {
 		private string _password;
 
 		/// <inheritdoc />
 		public TextEditorVM() {
 			RegisterChildren(() => this);
-
-			Header = Title;
-			Content = this;
-
-			var file = Menu.AddMenuItem("_File");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_New"});
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_Open.."});
-			file.AddMenuItem("_Save", DoSave);
-			file.AddMenuItem("Save _As..", DoSaveAs);
-			file.AddMenuItem("-");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_Close"});
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "C_lose All"});
-			file.AddMenuItem("-");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "E_xit"});
 
 			var edit = Menu.AddMenuItem("_Edit");
 			edit.AddMenuItem(ApplicationCommands.Undo);
@@ -40,71 +24,92 @@ namespace KsWare.CryptoPad.TextEditor {
 
 			var view = Menu.AddMenuItem("_View");
 			view.AddMenuItem("Options..", DoViewOptions);
+
+			Editor.ContentChanged += (s, e) => HasChanges = true;
 		}
 
 		private void DoViewOptions() {
 			
 		}
 
-		public StringVM Title { get; [UsedImplicitly] private set; }
-
 		public TextBoxControllerVM Editor { get; [UsedImplicitly] private set; }
-
-		public ListVM<MenuItemVM> Menu { get; [UsedImplicitly] private set; }
 
 		public void DoNewFile() {
 			Editor.Text = "";
-			_fileName = null;
-			Title.Value = "NewTxt";
+			FileName = FileTools.NewTempFile("NewTxt");
+			IsTempFile = true;
+			IsReadOnly = false;
+			HasChanges = false;
+			Header.Text = Path.GetFileName(FileName);
 		}
 
-		private void DoSave() {
-			if (string.IsNullOrEmpty(_fileName)) {
-				DoSaveAs();
-				return;
-			}
-			CryptFile.Write(Editor.Text, _fileName, _password);
-		}
-		
-		private void DoSaveAs() {
-			var dlg = new SaveFileDialog() {
-				Title = "Save text to...",
-				Filter = "Crypto-File|*.crypt|Text-File|*.txt|All Files|*.*",
-				FilterIndex = 1,
-				CheckPathExists = true
-			};
-			if (dlg.ShowDialog() != true) return;
+		/// <inheritdoc />
+		protected override void SaveTo(string fileName, string format, bool askPassword) {
 			string password = null;
-
-			switch (dlg.FilterIndex) {
-				case 1: /* .crypt */ {
+			SWITCH:
+			switch (format) {
+				case ".crypt": {
 					password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, _password ?? CryptFile.LastPassword);
-					CryptFile.Write(Editor.Text, dlg.FileName, CryptFile.LastPassword);
+					CryptFile.Write(Editor.Text, fileName, CryptFile.LastPassword);
 					break;
 				}
-				case 2: /* .txt */ {
-					FileTools.Write(Editor.Text, dlg.FileName);
+				case ".txt": {
+					FileTools.Write(Editor.Text, fileName);
 					break;
 				}
 
 				default: {
-					var ext = Path.GetExtension(dlg.FileName).ToLowerInvariant();
-					if (ext == ".crypt") goto case 1;
-					goto case 2;
+					if (format == null || !format.StartsWith(".")) {
+						format = Path.GetExtension(fileName).ToLowerInvariant();
+						goto SWITCH;
+					}
+					MessageBox.Show(Application.Current.MainWindow, $"Unsupported file format '{format}'.", "Save as...", MessageBoxButton.OK, MessageBoxImage.Warning);
+					throw new NotSupportedException();
 				}
 			}
 
-			_fileName = dlg.FileName;
+			FileName = fileName;
+			HasChanges = false;
+			IsReadOnly = false;
+			IsTempFile = FileTools.IsTempFile(fileName);
+			Header.Text = Path.GetFileName(fileName);
 			_password = password;
-			Title.Value = Path.GetFileName(dlg.FileName);
+		}
+		
+		public override bool SaveAs() {
+			var dlg = new SaveFileDialog() {
+				Title = "Save text to...",
+				Filter = "Crypto-File|*.crypt|Text-File|*.txt|All Files|*.*",
+				FilterIndex = 1,
+				CheckPathExists = true,
+				FileName = IsTempFile ? Path.GetFileName(FileName) : string.Empty
+			};
+			if (dlg.ShowDialog() != true) return false;
+
+			string format = null;
+			switch (dlg.FilterIndex) {
+				case 1: /* .crypt */ {
+					format = ".crypt";
+					break;
+				}
+				case 2: /* .txt */ {
+					format = ".txt";
+					break;
+				}
+			}
+
+			SaveTo(dlg.FileName, format, true);
+			return true;
 		}
 
 		public void OpenFile(string fileName, bool readOnly, CryptoStreamInfo info, string password) {
 			using var reader = new StreamReader(info.Stream);
 			Editor.Text = reader.ReadToEnd();
-			Title.Value = Path.GetFileName(fileName);
-			_readOnlyFileName = readOnly ? fileName : null;
-			_fileName = readOnly ? null : fileName;
+
+			Header.Text = Path.GetFileName(fileName);
+			FileName = fileName;
+			IsReadOnly = readOnly;
+			IsTempFile = FileTools.IsTempFile(fileName);
 			_password = password;
 		}
 

@@ -1,19 +1,17 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Windows;
 using JetBrains.Annotations;
 using KsWare.CryptoPad.Dialogs;
-using KsWare.CryptoPad.TextEditor;
 using KsWare.Presentation.ViewModelFramework;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.Win32;
 
 namespace KsWare.CryptoPad.TableEditor {
 
-	public class TableEditorVM : TabVM {
+	public class TableEditorVM : FileTabItemVM {
 
-		private string _fileName;
-		private string _readonlyFileName;
 		private string _separator;
 		private string _password;
 
@@ -21,47 +19,31 @@ namespace KsWare.CryptoPad.TableEditor {
 		public TableEditorVM() {
 			RegisterChildren(() => this);
 
-			Header = Title;
-			Content = this;
-
-			var file = Menu.AddMenuItem("_File");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_New"});
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_Open.."});
-			file.AddMenuItem("_Save", DoSave);
-			file.AddMenuItem("Save _As..", DoSaveAs);
-			file.AddMenuItem("-");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_Close"});
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "C_lose All"});
-			file.AddMenuItem("-");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "E_xit"});
-
 			var table = Menu.AddMenuItem("_Table");
 			var column=table.AddMenuItem("_Column");
 			column.AddMenuItem("_Add", DoAddColumn);
 			column.AddMenuItem("_Delete", DoDeleteColumn);
 			column.AddMenuItem("_Rename", DoRenameColumn);
+
+			Editor.ContentChanged += (s, e) => HasChanges = true;
 		}
-
-		public StringVM Title { get; [UsedImplicitly] private set; }
-
-		public DataGridControllerVM Editor { get; [UsedImplicitly] private set; }		
-		
-		public ListVM<MenuItemVM> Menu { get; [UsedImplicitly] private set; }
+		public DataGridControllerVM Editor { get; [UsedImplicitly] private set; }
 
 		public void DoFileNew() {
 			using var csvReader = new TextFieldParser(new StringReader("A,B,C,D"));
 			csvReader.SetDelimiters(",");
 			Editor.Table = CsvTools.GetDataTable(csvReader);
-			Title.Value = "NewTable";
+			FileName = FileTools.NewTempFile("NewTable");
+			IsTempFile = true;
+			HasChanges = false;
+			Header.Text = Path.GetFileName(FileName);
 		}
 
 		private void DoAddColumn() {
 			Editor.Table.Columns.Add($"C{Editor.Table.Columns.Count}");
 		}
 
-		/// <summary>
-		/// Method for <see cref="DeleteColumnAction"/>
-		/// </summary>
+
 		[UsedImplicitly]
 		private void DoDeleteColumn() {
 			
@@ -76,7 +58,7 @@ namespace KsWare.CryptoPad.TableEditor {
 		}
 
 		public void OpenFile(string fileName, bool readOnly, CryptoStreamInfo info, string password) {
-			using var reader = new StreamReader(info.Stream);
+			using var reader = new StreamReader(info?.Stream ?? File.OpenRead(fileName));
 			var text = reader.ReadToEnd();
 
 			var firstLine = new StringReader(text).ReadLine();
@@ -85,21 +67,15 @@ namespace KsWare.CryptoPad.TableEditor {
 			csvReader.SetDelimiters(new string[] { _separator });
 			Editor.Table = CsvTools.GetDataTable(csvReader);
 
-			_fileName = readOnly ? null : fileName;
+			FileName = fileName;
+			IsReadOnly = readOnly;
+			IsTempFile = FileTools.IsTempFile(fileName);
+			HasChanges = false;
+			Header.Text = Path.GetFileName(fileName);
 			_password = password;
-			_readonlyFileName = readOnly ? fileName : null;
-			Title.Value = Path.GetFileName(fileName);
 		}
 
-		private void DoSave() {
-			if (string.IsNullOrEmpty(_fileName)) {
-				DoSaveAs();
-				return;
-			}
-			SaveTo(_fileName, null, askPassword:false);
-		}
-
-		private void DoSaveAs() {
+		public override bool SaveAs() {
 			var dlg = new SaveFileDialog() {
 				Title = "Save table as...",
 				Filter = "Crypto-File|*.crypt"+
@@ -109,7 +85,7 @@ namespace KsWare.CryptoPad.TableEditor {
 				FilterIndex = 1,
 				CheckPathExists = true
 			};
-			if (dlg.ShowDialog() != true) return;
+			if (dlg.ShowDialog() != true) return false;
 
 			string format = null;
 			switch (dlg.FilterIndex) {
@@ -119,9 +95,10 @@ namespace KsWare.CryptoPad.TableEditor {
 				default: format = null; break;
 			}
 			SaveTo(dlg.FileName, format, askPassword:true);
+			return true;
 		}
 
-		private void SaveTo(string fileName, string format, bool askPassword) {
+		protected override void SaveTo(string fileName, string format, bool askPassword) {
 			string password=null;
 			SWITCH:
 			switch (format) {
@@ -148,16 +125,17 @@ namespace KsWare.CryptoPad.TableEditor {
 						format = Path.GetExtension(fileName).ToLowerInvariant();
 						goto SWITCH;
 					}
-					MessageBox.Show(Application.Current.MainWindow, $"Unsupported file format '{format}'", "Save table as...",
-						MessageBoxButton.OK, MessageBoxImage.Warning);
-					break;
+					MessageBox.Show(Application.Current.MainWindow, $"Unsupported file format '{format}'", "Save as...", MessageBoxButton.OK, MessageBoxImage.Warning);
+					throw new NotSupportedException();
 				}
 			}
 
-			_fileName = fileName;
+			FileName = fileName;
+			HasChanges = false;
+			IsReadOnly = false;
+			IsTempFile = FileTools.IsTempFile(fileName);
 			_password = password;
-			_readonlyFileName = null;
-			Title.Value = Path.GetFileName(fileName);
+			Header.Text = Path.GetFileName(fileName);
 		}
 
 	}

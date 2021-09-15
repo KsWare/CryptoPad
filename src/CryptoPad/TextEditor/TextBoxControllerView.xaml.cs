@@ -10,9 +10,8 @@ namespace KsWare.CryptoPad.TextEditor {
 		public TextBoxControllerView() {
 			InitializeComponent();
 
-			// connect/disconnect view and controller
 			DataContextChanged += (s, e) => {
-				// Debug.WriteLine($"DataContext: {e.NewValue?.GetType().Name??"Null"}");
+				// connect/disconnect view and controller
 				if (e.OldValue is TextBoxControllerVM vmOld) vmOld.Data = null;
 				if (e.NewValue is TextBoxControllerVM vm) vm.Data = this.TextBox;
 			};

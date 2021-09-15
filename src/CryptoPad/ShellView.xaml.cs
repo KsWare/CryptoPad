@@ -7,10 +7,8 @@ namespace KsWare.CryptoPad {
 	/// </summary>
 	public partial class ShellView : Window {
 
-
 		public ShellView() {
 			InitializeComponent();
-
 		}
 
 	}

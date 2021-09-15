@@ -2,7 +2,7 @@
 using System.Windows.Input;
 using KsWare.Presentation.ViewModelFramework;
 
-namespace KsWare.CryptoPad.TextEditor {
+namespace KsWare.CryptoPad {
 
 	public static class ListVMMenuItemExtensions {
 
@@ -17,6 +17,15 @@ namespace KsWare.CryptoPad.TextEditor {
 				CommandAction = { MːDoAction = action}
 			};
 			list.Add(item);
+			return item;
+		}
+
+		public static MenuItemVM AddMenuItem(this ContextMenuVM contextMenu, string caption, Action action=null) {
+			var item = new MenuItemVM {
+				Caption = caption,
+				CommandAction = { MːDoAction = action}
+			};
+			contextMenu.Items.Add(item);
 			return item;
 		}
 

@@ -7,5 +7,5 @@
 	xmlns:local="clr-namespace:KsWare.CryptoPad.RichTextEditor"
 	mc:Ignorable="d" 
 	d:DesignHeight="450" d:DesignWidth="800">
-    <local:RichTextEditorControllerView DataContext="{Binding Editor}"/>
+    <local:RichTextBoxControllerView DataContext="{Binding Editor}"/>
 </UserControl>

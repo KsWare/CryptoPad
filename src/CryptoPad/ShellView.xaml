@@ -3,7 +3,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:system="clr-namespace:System;assembly=System.Runtime"
     xmlns:txt="clr-namespace:KsWare.CryptoPad.TextEditor"
     xmlns:tbl="clr-namespace:KsWare.CryptoPad.TableEditor"
     xmlns:rtf="clr-namespace:KsWare.CryptoPad.RichTextEditor"
@@ -21,9 +20,29 @@
 	<DockPanel>
 		<Menu DockPanel.Dock="Top" ItemsSource="{Binding Menu}" ItemContainerStyle="{DynamicResource MenuItemVMStyle}"/>
 	    <TabControl ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}" TabStripPlacement="Top" Margin="3 0 3 3">
-			<TabControl.ItemTemplate>
+			<TabControl.ItemContainerStyle>
+				<Style TargetType="{x:Type TabItem}">
+					<Setter Property="ContextMenu">
+						<Setter.Value>
+							<ContextMenu
+								ItemsSource="{Binding Header.ContextMenu.Items}"
+								ItemContainerStyle="{StaticResource MenuItemVMStyle}"
+							/>
+						</Setter.Value>
+					</Setter>
+				</Style>
+			</TabControl.ItemContainerStyle>
+		    <TabControl.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding Header.Value}"/>
+					<StackPanel Orientation="Horizontal" >
+						<TextBlock x:Name="Title" Text="{Binding Header.Text}" TextTrimming="CharacterEllipsis"/>
+						<TextBlock x:Name="ChangedIndicator" Text="*" Visibility="{VisibilityBinding Content.HasChanges, TrueVisibleElseCollapsed}"/>
+					</StackPanel>
+					<DataTemplate.Triggers>
+						<DataTrigger Binding="{Binding Content.HasChanges}" Value="True">
+							<Setter TargetName="Title" Property="Foreground" Value="#E00000"/>
+						</DataTrigger>
+					</DataTemplate.Triggers>
                 </DataTemplate>
 			</TabControl.ItemTemplate>
 		    <TabControl.ContentTemplate>
@@ -42,7 +61,6 @@
 				    <ContentPresenter Content="{Binding Content}"/>
 			    </DataTemplate>
 		    </TabControl.ContentTemplate>
-
 	    </TabControl>
     </DockPanel>
 </Window>

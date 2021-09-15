@@ -1,11 +1,10 @@
 ﻿using System.Data;
 using System.Windows.Controls;
 using KsWare.Presentation.Core.Providers;
-using KsWare.Presentation.ViewModelFramework;
 
 namespace KsWare.CryptoPad.TableEditor {
 
-	public class DataGridControllerVM : DataVM<DataGrid> {
+	public class DataGridControllerVM : EditorControllerVM<DataGrid,DataTable> {
 
 		private DataGrid _cache;
 
@@ -23,10 +22,11 @@ namespace KsWare.CryptoPad.TableEditor {
 
 			if (e.PreviousData is DataGrid d) {
 				_cache = d;
+				d.CellEditEnding -= DataGridOnCellEditEnding;
 			}
 
 			if (e.NewData is DataGrid dg) {
-				//if(_table!=null) dg.ItemsSource = _table.DefaultView;
+				dg.CellEditEnding += DataGridOnCellEditEnding;
 				dg.ItemsSource = Table?.DefaultView;
 				if (_cache == null) {
 					
@@ -40,7 +40,16 @@ namespace KsWare.CryptoPad.TableEditor {
 					// 	var col = cell.Column;
 					// }
 				}
+
+				dg.Focus();
 			}
+		}
+
+		private void DataGridOnCellEditEnding(object? sender, DataGridCellEditEndingEventArgs e) {
+			// var yourClassInstance = e.EditingElement.DataContext;
+			// var editingTextBox = e.EditingElement as TextBox;
+			// var newValue = editingTextBox.Text;
+			OnContentChanged();
 		}
 	}
 

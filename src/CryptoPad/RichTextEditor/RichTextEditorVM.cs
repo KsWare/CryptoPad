@@ -1,17 +1,16 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
 using JetBrains.Annotations;
-using KsWare.CryptoPad.TextEditor;
 using KsWare.Presentation.ViewModelFramework;
 using Microsoft.Win32;
 
 namespace KsWare.CryptoPad.RichTextEditor {
 
-	public class RichTextEditorVM : TabVM {
+	public class RichTextEditorVM : FileTabItemVM {
 
-		private string _fileName;
 		private string _fileType;
 		private string _contentType;
 		private string _password;
@@ -19,20 +18,6 @@ namespace KsWare.CryptoPad.RichTextEditor {
 		/// <inheritdoc />
 		public RichTextEditorVM() {
 			RegisterChildren(() => this);
-
-			Header = Title;
-			Content = this;
-
-			var file = Menu.AddMenuItem("_File");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_New"});
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_Open.."});
-			file.AddMenuItem("_Save", DoSave);
-			file.AddMenuItem("Save _As..", DoSaveAs);
-			file.AddMenuItem("-");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "_Close"});
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "C_lose All"});
-			file.AddMenuItem("-");
-			file.AddMenuItem(new MenuItemPlaceholderVM{Caption = "E_xit"});
 
 			var edit = Menu.AddMenuItem("_Edit");
 			edit.AddMenuItem(ApplicationCommands.Undo);
@@ -44,19 +29,17 @@ namespace KsWare.CryptoPad.RichTextEditor {
 
 			var view = Menu.AddMenuItem("_View");
 			view.AddMenuItem("Options..", DoViewOptions);
+
+			Editor.ContentChanged += (s, e) => HasChanges = true;
 		}
 
-		public StringVM Title { get; private set; }
-
-		public RichTextEditorControllerVM Editor { get; private set; }
-
-		public ListVM<MenuItemVM> Menu { get; [UsedImplicitly] private set; }
+		public RichTextControllerVM Editor { get; private set; }
 
 		private void DoViewOptions() {
 			
 		}
 
-		private void DoSaveAs() {
+		public override bool SaveAs() {
 			var dlg = new SaveFileDialog() {
 				Title = "Save text to...",
 				Filter = "Crypto-File|*.crypt"+
@@ -67,7 +50,7 @@ namespace KsWare.CryptoPad.RichTextEditor {
 				FilterIndex = 1,
 				CheckPathExists = true
 			};
-			if (dlg.ShowDialog() != true) return;
+			if (dlg.ShowDialog() != true) return false;
 
 			string format = null;
 			switch (dlg.FilterIndex) {
@@ -79,6 +62,7 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			}
 
 			SaveTo(dlg.FileName, format, askPassword:true);
+			return true;
 		}
 
 		private static string GetDataFormat(string s) {
@@ -102,7 +86,7 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			}
 		}
 
-		private void SaveTo(string fileName, string format, bool askPassword) {
+		protected override void SaveTo(string fileName, string format, bool askPassword) {
 			string contentType = null;
 			string password = null;
 			SWITCH:
@@ -133,14 +117,13 @@ namespace KsWare.CryptoPad.RichTextEditor {
 						format = Path.GetExtension(fileName).ToLowerInvariant();
 						goto SWITCH;
 					}
-					MessageBox.Show(Application.Current.MainWindow, $"Unsupported file format '{format}'.", "Save as...",
-						MessageBoxButton.OK, MessageBoxImage.Warning);
-					break;
+					MessageBox.Show(Application.Current.MainWindow, $"Unsupported file format '{format}'.", "Save as...", MessageBoxButton.OK, MessageBoxImage.Warning);
+					throw new NotSupportedException();
 			}
 
-			_fileName = fileName;
+			FileName = fileName;
 			_password = password;
-			Title.Value = Path.GetFileName(fileName);
+			Header.Text = Path.GetFileName(fileName);
 			_fileType = Path.GetExtension(fileName);
 			_contentType = contentType;
 		}
@@ -167,18 +150,13 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			stream.Close();
 		}
 
-		private void DoSave() {
-			if (_fileName == null) {
-				DoSaveAs();
-				return;
-			}
-			SaveTo(_fileName, null, askPassword:false);
-		}
-
 		public void DoNewFile() {
 			Editor.Document = new FlowDocument();
-			_fileName = null;
-			Title.Value = "NewRtf";
+			FileName = FileTools.NewTempFile("NewRtf");
+			Header.Text = Path.GetFileName(FileName);
+			IsTempFile = true;
+			HasChanges = false;
+			IsReadOnly = false;
 		}
 
 		// private void RichTextBoxOnSelectionChanged(object sender, RoutedEventArgs e) {
@@ -199,8 +177,10 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			stream.Close();
 
 			Editor.Document = doc;
-			_fileName = readOnly ? null : fileName;
-			Title.Value = Path.GetFileName(fileName);
+			FileName = fileName;
+			IsReadOnly = readOnly;
+			IsTempFile = FileTools.IsTempFile(fileName);
+			Header.Text = Path.GetFileName(fileName);
 			_fileType = Path.GetExtension(fileName);
 			_contentType = info?.ContentType;
 			_password = password;
