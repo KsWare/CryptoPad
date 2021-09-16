@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="KsWare.IO.NamedPipes" Version="0.2.3" />
-    <PackageReference Include="KsWare.Presentation" Version="0.19.64" />
+    <PackageReference Include="KsWare.Presentation" Version="0.19.66" />
     <PackageReference Include="YamlDotNet" Version="11.2.1" />
   </ItemGroup>
 

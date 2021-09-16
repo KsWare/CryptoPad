@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using KsWare.IO.NamedPipes;
+using KsWare.CryptoPad.IPC;
 using KsWare.Presentation.ViewModelFramework;
 
 namespace KsWare.CryptoPad {
@@ -17,56 +16,37 @@ namespace KsWare.CryptoPad {
 
 		/// <inheritdoc />
 		protected override void OnStartup(StartupEventArgs e) {
-			// if (e.Args.Length > 0) {
-			// 	return;
-			// }
+			ParseCommandline(e.Args);
 
-			// var currentProcessId = Process.GetCurrentProcess().Id;
-			// var processes = Process.GetProcessesByName("CryptoPad");
-			// var otherProcesses =processes.Where(p => p.Id != currentProcessId).ToArray();
-			// CurrentServer= new NamedPipeServer($"CryptoPad-{currentProcessId}", -1, 1);
-			// CurrentServer.RequestReceived+=CurrentServerOnRequestReceived;
-			// CurrentServer.Run();
-			// if (otherProcesses.Length == 0) {
-			// 	MasterServer = new NamedPipeServer("CryptoPad", -1, 1);
-			// 	MasterServer.Run();
-			// 	MasterServer.RequestReceived+=MasterServerOnRequestReceived;
-			// }
-			// else {
-			// 	MasterClient = new NamedPipeClient("CryptoPad");
-			// }
+			var client = Communicator.GetClient();
+			if (client != null) {
+				client.Connect();
+				var response = client.SendRequest(MessageSerializer.Serialize("CommandLine", CommandLine));
+				Shutdown();
+				return;
+			}
 
 			base.OnStartup(e);
 		}
 
-		private void CurrentServerOnRequestReceived(object? sender, PipeMsgEventArgs e) {
-			var tokens = e.Request.Split(":", 2, StringSplitOptions.None);
-			switch (tokens[0].ToLowerInvariant()) {
-				case "ping": e.Response = "pong"; break;
-				default: e.Response = "ERROR: Unknown request."; break;
+		private void ParseCommandline(string[] args) {
+			var c = new CommandLineData();
+			for (int i = 0; i<args.Length; i++ ) {
+				var v = args[i];
+				switch (v.ToLowerInvariant()) {
+					case "-s": case "--session": c.SessionName = args[++i]; break;
+					case "-ro": case "--readonly": c.ReadOnly = true; break;
+					case "-f": case "--format": c.Format = args[++i]; break;
+					case "-h": case "/h":case "-?": case "/?": break; // TODO command line help
+					default: if (File.Exists(v)) c.FileName = v; break;
+				}
 			}
+
+			CommandLine = c;
 		}
 
-		public NamedPipeServer CurrentServer { get; set; }
+		public CommandLineData CommandLine { get; set; }
 
-		/// <inheritdoc />
-		protected override void OnExit(ExitEventArgs e) {
-			CurrentServer?.Dispose();
-			MasterServer?.Dispose();
-			MasterClient?.Dispose();
-			base.OnExit(e);
-		}
-
-		private void MasterServerOnRequestReceived(object sender, PipeMsgEventArgs e) {
-			var tokens = e.Request.Split(":", 2, StringSplitOptions.None);
-			switch (tokens[0].ToLowerInvariant()) {
-				case "ping": e.Response = "pong"; break;
-				default: e.Response = "ERROR: Unknown request."; break;
-			}
-		}
-
-		public NamedPipeClient MasterClient { get; set; }
-
-		public NamedPipeServer MasterServer { get; set; }
 	}
+
 }

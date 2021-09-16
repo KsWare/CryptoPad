@@ -14,13 +14,16 @@ using Microsoft.Win32;
 
 namespace KsWare.CryptoPad {
 
-	public class ShellVM : WindowVM {
+	public partial class ShellVM : WindowVM {
 
 		private SessionData _sessionData;
-		
+		private readonly Communicator _communicator;
+
 		/// <inheritdoc />
 		public ShellVM() {
 			RegisterChildren(() => this);
+			_communicator = new Communicator(this);
+
 			// Tabs.Add(new TextEditorVM { Title = { Value = "Text" } });
 			// Tabs.Add(new RichTextEditorVM() { Title = { Value = "RTF" } });
 			// Tabs.Add(new TableEditorVM() { Title = { Value = "Table" } });
@@ -47,35 +50,9 @@ namespace KsWare.CryptoPad {
 				if (e.NewValue != null) e.NewValue.Closing += WindowClosing;
 			};
 
-			string fileName = null;
-			string sessionName = null;
-			string format = null;
-			bool readOnly = false;
-			var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
-			for (int i = 0; i<args.Length; i++ ) {
-				var v = args[i];
-				switch (v.ToLowerInvariant()) {
-					case "-s": case "--session": sessionName = args[++i]; break;
-					case "-ro": case "--readonly": readOnly = true; break;
-					case "-f": case "--format": format = args[++i]; break;
-					case "-h": case "/h":case "-?": case "/?": break; // TODO command line help
-					default: if (File.Exists(v)) fileName = v; break;
-				}
-			}
-
-			if (sessionName != null) {
-				// use specified session
-			}
-			else if (fileName != null) {
-				sessionName = DateTime.Now.ToString("yyyyMMddHHmmss");
-			}
-			else {
-				sessionName = "Default";
-			}
-			_sessionData = FileTools.LoadSessionData(sessionName, createIfNotExist: true);
-
-			Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, DoRestoreTabs);
-			Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => OpenFile(fileName, format, readOnly));
+			var cmdline = ((AppVM)AppVM.Current).CommandLine;
+			cmdline.RestoreTabs = true;
+			HandleCommandLine(cmdline);
 		}
 
 		private void DoRestoreTabs() {
@@ -87,6 +64,7 @@ namespace KsWare.CryptoPad {
 		private void WindowClosing(object sender, CancelEventArgs e) {
 			_sessionData.Files = Tabs.Select(t => t.GetFileInfo()).ToArray();
 			FileTools.SaveSessionData(_sessionData);
+			_communicator.Close();
 		}
 
 		private void DoCloseAllFiles() {
@@ -265,6 +243,29 @@ namespace KsWare.CryptoPad {
 
 		public void CloseUnchanged() {
 			CloseTabs(Tabs.Where(t=>t.HasChanges==false).ToArray());
+		}
+
+		public void HandleCommandLine(CommandLineData data) {
+			if (_sessionData == null) {
+				if (data.SessionName != null) {
+					// use specified session
+				}
+				else if (data.FileName != null) {
+					data.SessionName = DateTime.Now.ToString("yyyyMMddHHmmss");
+				}
+				else {
+					data.SessionName = "Default";
+				}
+				_sessionData = FileTools.LoadSessionData(data.SessionName, createIfNotExist: true);
+			}
+
+			if (data.RestoreTabs) {
+				Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, DoRestoreTabs);
+			}
+
+			if (data.FileName != null) {
+				Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => OpenFile(data.FileName, data.Format, data.ReadOnly));
+			}
 		}
 	}
 
