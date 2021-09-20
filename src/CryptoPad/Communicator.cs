@@ -14,6 +14,7 @@ namespace KsWare.CryptoPad {
 
 		public Communicator(ShellVM shell) {
 			Shell = shell;
+			Initialize();
 		}
 
 		public ShellVM Shell { get; }
@@ -22,14 +23,14 @@ namespace KsWare.CryptoPad {
 			var currentProcessId = Process.GetCurrentProcess().Id;
 			var processes = Process.GetProcessesByName("CryptoPad");
 			var otherProcesses = processes.Where(p => p.Id != currentProcessId).ToArray();
-			CurrentServer= new NamedPipeServer($"CryptoPad-{currentProcessId}", -1, 1);
-			CurrentServer.RequestReceived+=CurrentServerOnRequestReceived;
-			CurrentServer.Run();
+			// CurrentServer = new NamedPipeServer($"CryptoPad-{currentProcessId}", 5, 1);
+			// CurrentServer.RequestReceived += CurrentServerOnRequestReceived;
+			// CurrentServer.Start();
 			if (otherProcesses.Length == 0) {
 				IsMaster = true;
-				MasterServer = new NamedPipeServer("CryptoPad", -1, 1);
-				MasterServer.Run();
-				MasterServer.RequestReceived+=MasterServerOnRequestReceived;
+				MasterServer = new NamedPipeServer("CryptoPad", 5, 1);
+				MasterServer.RequestReceived += MasterServerOnRequestReceived;
+				MasterServer.Start();
 			}
 			else {
 				// Client = new NamedPipeClient("CryptoPad");
@@ -56,20 +57,23 @@ namespace KsWare.CryptoPad {
 		}
 
 		private void MasterServerOnRequestReceived(object sender, PipeMsgEventArgs e) {
-			var header = MessageSerializer.Deserialize<Header>(e.Request);
+			try {
+				var header = MessageSerializer.Deserialize<Header>(e.Request);
 
-			switch (header.Name) {
-				case "CommandLine":
-					Shell.HandleCommandLine(MessageSerializer.Deserialize<CommandLineData>(e.Request).Data);
-					e.Response = "OK";
-					break;
-				default: 
-					e.Response = "ERROR: Unknown request."; 
-					break;
+				switch (header.Name) {
+					case "CommandLine":
+						Shell.HandleCommandLine(MessageSerializer.Deserialize<CommandLineData>(e.Request).Data);
+						e.Response = "OK";
+						break;
+					default: 
+						e.Response = "ERROR: Unknown request."; 
+						break;
+				}
+			}
+			catch (Exception ex) {
+				Debug.WriteLine(ex);
 			}
 		}
-
-
 
 		public void Close() {
 			CurrentServer?.Dispose();

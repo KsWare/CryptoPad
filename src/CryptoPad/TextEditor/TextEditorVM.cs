@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security;
 using System.Windows;
 using System.Windows.Input;
 using JetBrains.Annotations;
@@ -8,7 +9,6 @@ using Microsoft.Win32;
 namespace KsWare.CryptoPad.TextEditor {
 
 	public class TextEditorVM : FileTabItemVM {
-		private string _password;
 
 		/// <inheritdoc />
 		public TextEditorVM() {
@@ -34,30 +34,31 @@ namespace KsWare.CryptoPad.TextEditor {
 
 		public TextBoxControllerVM Editor { get; [UsedImplicitly] private set; }
 
-		public void DoNewFile() {
+		public override void NewFile(SecureString password) {
+			base.NewFile(password);
 			Editor.Text = "";
 			FileName = FileTools.NewTempFile("NewTxt");
-			IsTempFile = true;
-			IsReadOnly = false;
-			HasChanges = false;
 			Header.Text = Path.GetFileName(FileName);
+			SaveTo(FileName, "text/plain", password);
 		}
 
 		/// <inheritdoc />
-		protected override void SaveTo(string fileName, string format, bool askPassword) {
-			string password = null;
+		protected override void SaveTo(string fileName, string format, SecureString password) {
+			if (FileTools.IsCryptFile(fileName)) format = ".crypt";
+			Editor.RefreshText(); //workaround for Text not updated on Window.Closing
+			string contentType;
 			SWITCH:
 			switch (format) {
 				case ".crypt": {
-					password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, _password ?? CryptFile.LastPassword);
-					CryptFile.Write(Editor.Text, fileName, CryptFile.LastPassword);
+					contentType = "text/plain";
+					CryptFile.Write(Editor.Text, fileName, password);
 					break;
 				}
-				case ".txt": {
+				case ".txt": case "text/plain":{
+					contentType = "text/plain";
 					FileTools.Write(Editor.Text, fileName);
 					break;
 				}
-
 				default: {
 					if (format == null || !format.StartsWith(".")) {
 						format = Path.GetExtension(fileName).ToLowerInvariant();
@@ -73,44 +74,62 @@ namespace KsWare.CryptoPad.TextEditor {
 			IsReadOnly = false;
 			IsTempFile = FileTools.IsTempFile(fileName);
 			Header.Text = Path.GetFileName(fileName);
-			_password = password;
+			ContentType = contentType;
 		}
 		
 		public override bool SaveAs() {
-			var dlg = new SaveFileDialog() {
+			var dlg = new SaveFileDialog {
 				Title = "Save text to...",
-				Filter = "Crypto-File|*.crypt|Text-File|*.txt|All Files|*.*",
+				Filter = "CryptoPad File (*.crypt)|*.crypt|Text-File|*.txt|All Files|*.*",
 				FilterIndex = 1,
+				FileName = IsTempFile ? Path.GetFileName(FileName) : string.Empty,
 				CheckPathExists = true,
-				FileName = IsTempFile ? Path.GetFileName(FileName) : string.Empty
+				OverwritePrompt = true
 			};
 			if (dlg.ShowDialog() != true) return false;
 
 			string format = null;
 			switch (dlg.FilterIndex) {
-				case 1: /* .crypt */ {
-					format = ".crypt";
-					break;
-				}
-				case 2: /* .txt */ {
-					format = ".txt";
-					break;
-				}
+				case 1: format = ".crypt"; break;
+				case 2: format = ".txt"; break;
+				default: format = GetFormat(dlg.FileName); break;
 			}
 
-			SaveTo(dlg.FileName, format, true);
+			if(format==".crypt")
+				PasswordPanel.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordPanel.Password ?? CryptFile.LastPassword);
+
+			SaveTo(dlg.FileName, format, PasswordPanel.Password);
 			return true;
 		}
 
-		public void OpenFile(string fileName, bool readOnly, CryptoStreamInfo info, string password) {
-			using var reader = new StreamReader(info.Stream);
-			Editor.Text = reader.ReadToEnd();
+		private string GetFormat(string sig) {
+			SWITCH:
+			switch (sig) {
+				case ".txt": return ".txt";
+				case ".crypt": return ".crypt";
+				default:
+					if (!sig.StartsWith(".")) {
+						sig = Path.GetExtension(sig).ToLowerInvariant();
+						goto SWITCH;
+					}
+					return null;
+			}
+		}
 
-			Header.Text = Path.GetFileName(fileName);
-			FileName = fileName;
-			IsReadOnly = readOnly;
-			IsTempFile = FileTools.IsTempFile(fileName);
-			_password = password;
+		/// <inheritdoc/>
+		public override void OpenFile(string fileName, bool readOnly = false, CryptoStreamInfo info = null, SecureString password = null) {
+			base.OpenFile(fileName, readOnly, info, password);
+			if(PasswordPanel.IsOpen) return;
+
+			Stream stream;
+			if (info?.Stream != null) stream = info.Stream;
+			else if (FileTools.IsCryptFile(fileName)) stream = CryptFile.OpenRead(fileName, password).Stream;
+			else stream = File.OpenRead(fileName);
+
+			using var reader = new StreamReader(stream);
+			Editor.Text = reader.ReadToEnd();
+			reader.Close();
+			IsLoaded = true;
 		}
 
 	}

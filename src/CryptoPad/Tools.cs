@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
@@ -23,25 +24,25 @@ namespace KsWare.CryptoPad {
 			return false;
 		}
 
-		public static string Decrypt(string sourceFile, string password) {
+		public static string Decrypt(string sourceFile, SecureString password) {
 			using var fileStream = File.Open(sourceFile, FileMode.Open, FileAccess.Read, FileShare.Inheritable);
 			var info = Decrypt(fileStream, password);
 			using var reader = new StreamReader(info.Stream, new UTF8Encoding(false));
 			return reader.ReadToEnd();
 		}
 
-		public static CryptoStreamInfo Decrypt(Stream stream, string password) {
+		public static CryptoStreamInfo Decrypt(Stream stream, SecureString password) {
 			var header = CryptFile.ReadFileHeader(stream);
 			var cryptoStream = new CryptoStream(stream, CryptFile.CreateDecryptor(header, password), CryptoStreamMode.Read);
-			var info = CryptFile.ReadDataHeader(cryptoStream);
+			var info = CryptFile.ReadDataHeader(cryptoStream, header);
 			return info;
 		}
 
-		public static void Encrypt(Stream input, Stream output, string password, string contentType) {
-			var info = CryptFile.CreateCryptFileInfo(password);
-			CryptFile.WriteFileHeader(output, info.Salt);
+		public static void Encrypt(Stream input, Stream output, SecureString password, string contentType) {
+			var info = CryptFile.CreateCryptFileInfo(contentType, password);
+			CryptFile.WriteFileHeader(output, contentType, info.Salt);
 			using var cryptoStream = new CryptoStream(output, info.CryptoTransform, CryptoStreamMode.Write, true);
-			CryptFile.WriteDataHeader(cryptoStream, contentType);
+			CryptFile.WriteDataHeader(cryptoStream);
 
 			Copy(input, cryptoStream);
 			cryptoStream.Flush();
@@ -59,13 +60,15 @@ namespace KsWare.CryptoPad {
 
 	public class CryptoStreamInfo {
 
-		public CryptoStreamInfo(string contentType, Stream stream) {
-			ContentType = contentType;
+		public CryptoStreamInfo(CryptFileInfo fileInfo, Stream stream) {
+			ContentType = fileInfo.ContentType;
+			Password = fileInfo.Password;
 			Stream = stream;
 		}
 
 		public string ContentType { get; }
 		public Stream Stream { get; }
+		public SecureString Password { get; set; }
 	}
 
 }

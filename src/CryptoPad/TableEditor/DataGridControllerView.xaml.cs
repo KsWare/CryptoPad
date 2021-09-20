@@ -1,6 +1,4 @@
-﻿using System.Data;
-using System.Windows.Controls;
-using System.Windows.Data;
+﻿using System.Windows.Controls;
 
 namespace KsWare.CryptoPad.TableEditor {
 

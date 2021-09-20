@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -18,12 +19,23 @@ namespace KsWare.CryptoPad {
 		protected override void OnStartup(StartupEventArgs e) {
 			ParseCommandline(e.Args);
 
-			var client = Communicator.GetClient();
-			if (client != null) {
-				client.Connect();
-				var response = client.SendRequest(MessageSerializer.Serialize("CommandLine", CommandLine));
-				Shutdown();
-				return;
+			if (CommandLine.FileName != null) {
+				using var client = Communicator.GetClient();
+				if (client != null) {
+					try {
+						client.Connect();
+						var request = MessageSerializer.Serialize("CommandLine", CommandLine);
+						var response = client.SendRequest(request);
+					}
+					catch (Exception ex) {
+						Debug.WriteLine(ex.ToString());
+						MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); 
+						//TODO log error
+					}
+
+					Shutdown();
+					return;
+				}
 			}
 
 			base.OnStartup(e);

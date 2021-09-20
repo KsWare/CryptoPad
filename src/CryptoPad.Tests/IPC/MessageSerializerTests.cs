@@ -24,7 +24,8 @@ namespace CryptoPad.Tests.IPC {
 				Format = "Text",
 				IsReadOnly = true
 			};
-			var yaml = MessageSerializer.Serialize(m.GetMessage());
+			var yaml = MessageSerializer.Serialize(m);
+			var count = yaml.Length;
 			var message = MessageSerializer.Deserialize<OpenFile>(yaml);
 
 			Assert.That(message.Data.FileName, Is.EqualTo("C:\\Path\\File.test"));

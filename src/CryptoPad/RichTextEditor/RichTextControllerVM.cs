@@ -36,7 +36,9 @@ namespace KsWare.CryptoPad.RichTextEditor {
 				if (_cache != null) {
 					rtb.ScrollToHorizontalOffset(_cache.HorizontalOffset);
 					rtb.ScrollToVerticalOffset(_cache.VerticalOffset);
-					rtb.Selection.Select(Document.ContentStart.GetPositionAtOffset(_cache.SelectionStart),Document.ContentStart.GetPositionAtOffset(_cache.SelectionEnd));
+					var selStart = rtb.Document.ContentStart.GetPositionAtOffset(_cache.SelectionStart);
+					var selEnd = rtb.Document.ContentStart.GetPositionAtOffset(_cache.SelectionEnd);
+					if (selStart != null && selEnd != null) rtb.Selection.Select(selStart, selEnd);
 				}
 				else {
 					

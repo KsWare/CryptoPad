@@ -5,7 +5,15 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
 	xmlns:local="clr-namespace:KsWare.CryptoPad.RichTextEditor"
+	xmlns:dialogs="clr-namespace:KsWare.CryptoPad.Dialogs"
+	xmlns:overlays="clr-namespace:KsWare.CryptoPad.Overlays"
 	mc:Ignorable="d" 
-	d:DesignHeight="450" d:DesignWidth="800">
-    <local:RichTextBoxControllerView DataContext="{Binding Editor}"/>
+	d:DesignHeight="450" d:DesignWidth="800"
+	d:DataContext="{d:DesignInstance local:RichTextEditorVM, IsDesignTimeCreatable=False}"
+	>
+	<Grid>
+		<local:RichTextBoxControllerView DataContext="{Binding Editor}"/>
+		<overlays:PasswordPanelView DataContext="{Binding PasswordPanel}" d:IsHidden="True"/>
+		<overlays:ErrorPanelView DataContext="{Binding ErrorPanel}" d:IsHidden="True"/>
+	</Grid>
 </UserControl>

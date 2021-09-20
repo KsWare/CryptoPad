@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Security;
 using System.Windows;
 
 namespace KsWare.CryptoPad {
@@ -9,18 +10,22 @@ namespace KsWare.CryptoPad {
 	public partial class PasswordDialog : Window {
 
 		public static readonly DependencyProperty PasswordProperty = DependencyProperty.Register(
-			"Password", typeof(string), typeof(PasswordDialog), new FrameworkPropertyMetadata(default(string), (d, e) => ((PasswordDialog) d).OnPasswordChanged(e)));
+			"Password", typeof(SecureString), typeof(PasswordDialog), new FrameworkPropertyMetadata(default(SecureString), (d, e) => ((PasswordDialog) d).OnPasswordChanged(e)));
 
 		private void OnPasswordChanged(DependencyPropertyChangedEventArgs e) {
-			var newValue = (string) e.NewValue;
-			var oldValue = (string) e.OldValue;
+			var newValue = (SecureString) e.NewValue;
+			var oldValue = (SecureString) e.OldValue;
 
-			PasswordBox.Password = newValue;
+			PasswordBox.Password = newValue.ToInsecureString();
 			PasswordBox.SelectAll();
 		}
 
-		public string Password {
-			get => (string) GetValue(PasswordProperty);
+		// public string Password {
+		// 	get => (string) GetValue(PasswordProperty);
+		// 	set => SetValue(PasswordProperty, value);
+		// }
+		public SecureString Password {
+			get => (SecureString) GetValue(PasswordProperty);
 			set => SetValue(PasswordProperty, value);
 		}
 
@@ -45,7 +50,7 @@ namespace KsWare.CryptoPad {
 		}
 
 		private void OkClick(object sender, RoutedEventArgs e) {
-			Password = PasswordBox.Password;
+			Password = PasswordBox.SecurePassword;
 			DialogResult = true;
 			Close();
 		}
@@ -55,7 +60,12 @@ namespace KsWare.CryptoPad {
 			Close();
 		}
 
-		public static string GetPassword(Window owner, string defaultPassword = null, string fileName = null) {
+		// public static string GetPassword(Window owner, string defaultPassword = null, string fileName = null) {
+		// 	var dlg = new PasswordDialog{Owner = owner, Password = defaultPassword, FileName = fileName};
+		// 	return dlg.ShowDialog()!=true ? defaultPassword : dlg.Password;
+		// }
+
+		public static SecureString GetPassword(Window owner, SecureString defaultPassword = null, string fileName = null) {
 			var dlg = new PasswordDialog{Owner = owner, Password = defaultPassword, FileName = fileName};
 			return dlg.ShowDialog()!=true ? defaultPassword : dlg.Password;
 		}

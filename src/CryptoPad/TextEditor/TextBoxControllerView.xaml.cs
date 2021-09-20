@@ -1,4 +1,5 @@
-﻿using System.Windows.Data;
+﻿using System.Diagnostics;
+using System.Windows.Data;
 
 namespace KsWare.CryptoPad.TextEditor {
 
@@ -26,6 +27,8 @@ namespace KsWare.CryptoPad.TextEditor {
 
 			// workaround for: source is updated only at LostFocus but not at LostKeyboardFocus (switch between tabs, open menu, ...)
 			TextBox.PreviewLostKeyboardFocus += (o, e) => {
+				// not raised on Window.Closing
+				Debug.WriteLine("TextBox.PreviewLostKeyboardFocus");
 				var bindingExpression = BindingOperations.GetBindingExpression(TextBox, System.Windows.Controls.TextBox.TextProperty);
 				bindingExpression.UpdateSource();
 			};

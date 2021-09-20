@@ -1,5 +1,5 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -7,18 +7,19 @@ namespace KsWare.CryptoPad {
 
 	public static class CryptFile {
 
-		public static void Write(string text, string targetFile, string password, string contentType = "text/plain") {
+		public static void Write(string text, string targetFile, SecureString password, string contentType = "text/plain") {
 			using var stream = new MemoryStream(Encoding.UTF8.GetBytes(text));
 			Write(stream, targetFile, password, contentType);
 		}
 
-		public static void Write(Stream stream, string targetFileName, string password, string contentType) {
-			if(File.Exists(targetFileName + ".~tmp")) File.Delete(targetFileName + ".~tmp");
-			var fileStream = File.Open(targetFileName + ".~tmp", FileMode.CreateNew, FileAccess.Write, FileShare.None);
+		public static void Write(Stream stream, string targetFileName, SecureString password, string contentType) {
+			var tempFile = $"{targetFileName}.~tmp";
+			if(File.Exists(tempFile)) File.Delete(tempFile);
+			var fileStream = File.Open(tempFile, FileMode.CreateNew, FileAccess.Write, FileShare.None);
 			Tools.Encrypt(stream, fileStream, password, contentType);
 			fileStream.Close();
 			File.Delete(targetFileName);
-			File.Move(targetFileName + ".~tmp", targetFileName);
+			File.Move(tempFile, targetFileName);
 		}
 
 		private static void RemoveExistingBackupFile(string backupFileName) {
@@ -29,31 +30,38 @@ namespace KsWare.CryptoPad {
 			if (File.Exists(targetFileName)) File.Move(targetFileName, backupFileName);
 		}
 
-		public static Stream Create(string fileName, string password, string contentType) {
+		public static Stream Create(string fileName, SecureString password, string contentType) {
 			var output = File.Create(fileName); // will be closed when cryptoStream is closed
 
-			var info = CreateCryptFileInfo(password);
-			WriteFileHeader(output, info.Salt);
+			var info = CreateCryptFileInfo(contentType, password);
+			WriteFileHeader(output, contentType, info.Salt);
 			var cryptoStream = new CryptoStream(output, info.CryptoTransform, CryptoStreamMode.Write, leaveOpen:false);
-			WriteDataHeader(cryptoStream, contentType);
+			WriteDataHeader(cryptoStream);
 
 			cryptoStream.Flush();
 			return cryptoStream;
 		}
 
-		public static CryptoStreamInfo OpenRead(string fileName, string password) {
+		public static CryptFileInfo ReadInfo(string fileName) {
+			using var stream = File.OpenRead(fileName);
+			var info = ReadFileHeader(stream);
+			return info;
+		}
+
+		public static CryptoStreamInfo OpenRead(string fileName, SecureString password) {
 			var stream = File.OpenRead(fileName);
 			var info = ReadFileHeader(stream);
 			var decryptor = CreateDecryptor(info, password);
 			var cryptoStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read, leaveOpen:false);
-			var info2 = ReadDataHeader(cryptoStream);
+			var info2 = ReadDataHeader(cryptoStream, info);
 			return info2;
 		}
 
-		internal static void WriteFileHeader(Stream output, byte[] salt) {
+		internal static void WriteFileHeader(Stream output, string contentType, byte[] salt) {
 			using var w = new BinaryWriter(output, Encoding.UTF8, true);
 			w.Write(Encoding.ASCII.GetBytes("CRYPT"));	// Signature (5 bytes)
 			w.Write((ushort)1);							// Version 1 (2 bytes)
+			w.Write(contentType);							// Format: Text|RichText|Table
 			w.Write((short)salt.Length);				// salt size (2 byte)
 			w.Write(salt, 0, salt.Length);				// salt
 			w.Flush();
@@ -61,27 +69,28 @@ namespace KsWare.CryptoPad {
 
 		internal static CryptFileInfo ReadFileHeader(Stream input) {
 			using var r = new BinaryReader(input, Encoding.UTF8, true);
-			var sig = r.ReadBytes(5); // signature "CRYPT"
-			var version = r.ReadInt16(); // Version 1 (2 bytes)
+			var sig = r.ReadBytes(5);			// signature "CRYPT"
+			var version = r.ReadInt16();		// Version 1 (2 bytes)
 			if (version != 1) throw new InvalidDataException("Incompatible file version!\nUpdate CryptoPad.");
-			var saltSize = r.ReadInt16(); // salt size 8 (2 byte)
-			var salt = r.ReadBytes(saltSize);
-			return new CryptFileInfo(version, salt, null);
+			var format = r.ReadString();		// Format: Text|RichText|Table
+			var saltSize = r.ReadInt16();		// salt size 8 (2 byte)
+			var salt = r.ReadBytes(saltSize);	// Salt
+			return new CryptFileInfo(version, format, salt);
 		}
 
-		public static void WriteDataHeader(CryptoStream cryptoStream, string contentType) {
-			using var w = new BinaryWriter(cryptoStream, Encoding.UTF8, true);
-			w.Write(contentType); // content type (x+1 byte)
+		public static void WriteDataHeader(CryptoStream cryptoStream) {
+			//using var w = new BinaryWriter(cryptoStream, Encoding.UTF8, true);
+			//w.Write(contentType); // content type (x+1 byte)
 			//w.Write(ComputeHash(input)); // SHA256-256 checksum (32 bytes)
-			w.Flush();
+			//w.Flush();
 		}
 
-		public static CryptoStreamInfo ReadDataHeader(CryptoStream cryptoStream) {
-			using var binaryReader2 = new BinaryReader(cryptoStream, Encoding.UTF8, true);
-			var contentType = binaryReader2.ReadString();
-			//var hash = binaryReader2.ReadBytes(32); // SHA256-256 checksum (32 bytes)
+		public static CryptoStreamInfo ReadDataHeader(CryptoStream cryptoStream, CryptFileInfo fileInfo) {
+			// using var binaryReader2 = new BinaryReader(cryptoStream, Encoding.UTF8, true);
+			// var contentType = binaryReader2.ReadString();
+			// var hash = binaryReader2.ReadBytes(32); // SHA256-256 checksum (32 bytes)
 
-			var info = new CryptoStreamInfo(contentType, cryptoStream);
+			var info = new CryptoStreamInfo(fileInfo, cryptoStream);
 			return info;
 		}
 
@@ -91,44 +100,58 @@ namespace KsWare.CryptoPad {
 		/// <param name="header">Header from file.</param>
 		/// <param name="password">The password</param>
 		/// <returns></returns>
-		public static ICryptoTransform CreateDecryptor(CryptFileInfo header, string password) {
+		public static ICryptoTransform CreateDecryptor(CryptFileInfo header, SecureString password) {
 			// initialize algorithm with salt
-			var keyGenerator = new Rfc2898DeriveBytes(password, header.Salt, 10000, HashAlgorithmName.SHA256);
+			var keyGenerator = new Rfc2898DeriveBytes(password.ToInsecureString(), header.Salt, 10000, HashAlgorithmName.SHA256);
 			var rijndael = Rijndael.Create();
 
 			rijndael.IV = keyGenerator.GetBytes(rijndael.BlockSize / 8);
 			rijndael.Key = keyGenerator.GetBytes(rijndael.KeySize / 8);
+			// rijndael.Padding = PaddingMode.PKCS7;
 			return rijndael.CreateDecryptor();
 		}
 
-		public static CryptFileInfo CreateCryptFileInfo(string password) {
+		public static CryptFileInfo CreateCryptFileInfo(string contentType, SecureString password) {
 			var saltSize = 8;
-			var keyGenerator = new Rfc2898DeriveBytes(password, saltSize, 10000, HashAlgorithmName.SHA256);
+			var keyGenerator = new Rfc2898DeriveBytes(password.ToInsecureString(), saltSize, 10000, HashAlgorithmName.SHA256);
 			var rijndael = Rijndael.Create();
 
 			// BlockSize, KeySize in bit --> divide by 8
 			rijndael.IV = keyGenerator.GetBytes(rijndael.BlockSize / 8);
 			rijndael.Key = keyGenerator.GetBytes(rijndael.KeySize / 8);
+			// rijndael.Padding = PaddingMode.PKCS7;
 
-			return new CryptFileInfo(1, keyGenerator.Salt, rijndael.CreateEncryptor());
+			return new CryptFileInfo(1, contentType, keyGenerator.Salt, rijndael.CreateEncryptor(), password);
 		}
 
-		public static string LastPassword { get; set; }
+		public static SecureString LastPassword { get; set; }
 	}
 
 	public class CryptFileInfo {
 
-		public CryptFileInfo(int version, byte[] salt, ICryptoTransform transform ) {
+		public CryptFileInfo(int version, string contentType, byte[] salt) {
 			Version = version;
+			ContentType = contentType;
+			Salt = salt;
+		}
+
+		public CryptFileInfo(int version, string contentType, byte[] salt, ICryptoTransform transform, SecureString password) {
+			Version = version;
+			ContentType = contentType;
 			Salt = salt;
 			CryptoTransform = transform;
+			Password = password;
 		}
 
 		public int Version { get; }
 
+		public string ContentType { get; }
+
 		public byte[] Salt { get; }
 
 		public ICryptoTransform CryptoTransform { get; }
+
+		public SecureString Password { get; set; } 
 	}
 
 }

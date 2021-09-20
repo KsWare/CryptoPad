@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Security;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -10,10 +12,6 @@ using Microsoft.Win32;
 namespace KsWare.CryptoPad.RichTextEditor {
 
 	public class RichTextEditorVM : FileTabItemVM {
-
-		private string _fileType;
-		private string _contentType;
-		private string _password;
 
 		/// <inheritdoc />
 		public RichTextEditorVM() {
@@ -61,13 +59,23 @@ namespace KsWare.CryptoPad.RichTextEditor {
 				case 5: format = ".txt"; break;
 			}
 
-			SaveTo(dlg.FileName, format, askPassword:true);
+			if(format==".crypt")
+				PasswordPanel.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordPanel.Password ?? CryptFile.LastPassword);
+
+			SaveTo(dlg.FileName, format, PasswordPanel.Password);
 			return true;
 		}
 
-		private static string GetDataFormat(string s) {
+		/// <summary>
+		/// Gets the data format for <see cref="TextRange.Load">TextRange.Load</see>
+		/// </summary>
+		/// <param name="identifier">A file name, a file extension or a MIME identifier</param>
+		/// <returns>A value of <see cref="DataFormats"/> or <c>null</c></returns>
+		/// <seealso cref="DataFormats"/>
+		private static string GetDataFormat(string identifier) {
 			SWITCH:
-			switch (s) {
+			switch (identifier) {
+				case null: case "": return null;
 				case ".txt": case /*DataFormats*/"Text": case "text/plain":
 					return DataFormats.Text;
 				case ".xps": case /*DataFormats*/"XamlPackage": case "application/vnd.ms-xpsdocument":
@@ -77,40 +85,42 @@ namespace KsWare.CryptoPad.RichTextEditor {
 				case ".rtf": case ".wri": case /*DataFormats*/"Rich Text Format": case "application/rtf":
 					return DataFormats.Rtf;
 				default:
-					if (!s.StartsWith(".") && s.Contains(".")) {
+					if (!identifier.StartsWith(".") && identifier.Contains(".")) {
 						//possibly file name
-						s = Path.GetExtension(s).ToLowerInvariant();
+						identifier = Path.GetExtension(identifier).ToLowerInvariant();
 						goto SWITCH;
 					}
 					return null;
 			}
 		}
 
-		protected override void SaveTo(string fileName, string format, bool askPassword) {
-			string contentType = null;
-			string password = null;
+		protected override void SaveTo(string fileName, string format, SecureString password) {
+			if (FileTools.IsCryptFile(fileName)) format = ".crypt";
+			string contentType;
 			SWITCH:
 			switch (format) {
 				case ".crypt":
-					contentType = "application/vnd.ms-xpsdocument";
-					if(askPassword || _password==null)
-						password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, _password ?? CryptFile.LastPassword);
-					var stream = CryptFile.Create(fileName, password, contentType);
-					SaveToStream(Editor.Document, stream, DataFormats.XamlPackage);
 					// application/xaml+xml		DataFormats.Xaml
 					// application/rtf			DataFormats.Rtf
+					contentType = "application/vnd.ms-xpsdocument";
+					var stream = CryptFile.Create(fileName, password, contentType);
+					SaveToStream(Editor.Document, stream, DataFormats.XamlPackage);
 					break;
 				case ".txt": case /*DataFormats*/"Text": case "text/plain":
 					SaveToFile(Editor.Document, fileName, DataFormats.Text);
+					contentType = "text/plain";
 					break;
 				case ".xps": case /*DataFormats*/"XamlPackage":case "application/vnd.ms-xpsdocument":
 					SaveToFile(Editor.Document, fileName, DataFormats.XamlPackage);
+					contentType = "application/vnd.ms-xpsdocument";
 					break;
 				case ".xaml": case /*DataFormats*/"Xaml": case "application/xaml+xml":
 					SaveToFile(Editor.Document, fileName, DataFormats.Xaml);
+					contentType = "application/application/xaml+xml";
 					break;
 				case ".rtf": case ".wri": case /*DataFormats*/"Rich Text Format": case "application/rtf":
 					SaveToFile(Editor.Document, fileName, DataFormats.Rtf);
+					contentType = "application/rtf";
 					break;
 				default:
 					if (format == null || !format.StartsWith(".")) {
@@ -122,10 +132,9 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			}
 
 			FileName = fileName;
-			_password = password;
 			Header.Text = Path.GetFileName(fileName);
-			_fileType = Path.GetExtension(fileName);
-			_contentType = contentType;
+			ContentType = contentType;
+			HasChanges = false;
 		}
 
 		private static void SaveToFile(FlowDocument document, string fileName, string dataFormat) {
@@ -147,43 +156,50 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			else {
 				selection.Save(stream, dataFormat);
 			}
+//			(stream as CryptoStream)?.FlushFinalBlock(); // not documented, but we have to call FlushFinalBlock explicitly.
 			stream.Close();
 		}
 
-		public void DoNewFile() {
+		public override void NewFile(SecureString password) {
+			base.NewFile(password);
 			Editor.Document = new FlowDocument();
 			FileName = FileTools.NewTempFile("NewRtf");
 			Header.Text = Path.GetFileName(FileName);
-			IsTempFile = true;
-			HasChanges = false;
-			IsReadOnly = false;
+			SaveTo(FileName, "application/vnd.ms-xpsdocument", password);
 		}
 
-		// private void RichTextBoxOnSelectionChanged(object sender, RoutedEventArgs e) {
-		// 	var RTBText = new TextRange(RichTextBox.Document.ContentStart, RichTextBox.Document.ContentEnd);
-		// 	RTBText.Save(fs, DataFormats.Rtf);
-		// }
-
-		public void OpenFile(string fileName, bool readOnly, CryptoStreamInfo info, string password) {
+		/// <inheritdoc/>
+		public override void OpenFile(string fileName, bool readOnly = false, CryptoStreamInfo info = null, SecureString password = null) {
+			base.OpenFile(fileName, readOnly, info, password);
+			if(PasswordPanel.IsOpen) return;
 
 			// Derzeit werden die Datenformate Rtf, Text, Xaml und XamlPackage
 			var doc = new FlowDocument();
 			var selection = new TextRange(doc.ContentStart, doc.ContentEnd);
 
-			var stream = info?.Stream ?? File.OpenRead(fileName);
-			var dataFormat = GetDataFormat(info?.ContentType ?? Path.GetExtension(fileName));
+			Stream stream;
+			if (info?.Stream != null) stream = info.Stream;
+			else if (FileTools.IsCryptFile(fileName)) stream = CryptFile.OpenRead(fileName, password).Stream;
+			else stream = File.OpenRead(fileName);
 
-			selection.Load(stream, dataFormat);
+			var dataFormat = GetDataFormat(info?.ContentType ?? fileName);
+
+			try {
+				selection.Load(stream, dataFormat);
+			}
+			catch (CryptographicException ex) {
+				// https://stackoverflow.com/questions/8583112/padding-is-invalid-and-cannot-be-removed
+				PasswordPanel.IsOpen = true;
+				throw; //TODO
+			}
+			catch (Exception ex) {
+				throw;
+			}
+
 			stream.Close();
 
 			Editor.Document = doc;
-			FileName = fileName;
-			IsReadOnly = readOnly;
-			IsTempFile = FileTools.IsTempFile(fileName);
-			Header.Text = Path.GetFileName(fileName);
-			_fileType = Path.GetExtension(fileName);
-			_contentType = info?.ContentType;
-			_password = password;
+			IsLoaded = true;
 		}
 	}
 

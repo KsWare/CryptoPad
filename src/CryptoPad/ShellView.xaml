@@ -9,7 +9,7 @@
     xmlns:cryptoPad="clr-namespace:KsWare.CryptoPad"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance cryptoPad:ShellVM, IsDesignTimeCreatable=False}"
-    Title="Crypto Pad" Height="200" Width="400" Icon="/app.ico">
+    Title="{Binding Title.Value}" Height="250" Width="400" Icon="/app.ico">
 	<Window.Resources>
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
@@ -33,13 +33,16 @@
 				</Style>
 			</TabControl.ItemContainerStyle>
 		    <TabControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate DataType="{x:Type cryptoPad:FileTabItemVM}">
 					<StackPanel Orientation="Horizontal" >
+						<StackPanel.InputBindings>
+							<MouseBinding MouseAction="MiddleClick" Gesture="" Command=""></MouseBinding>
+						</StackPanel.InputBindings>
 						<TextBlock x:Name="Title" Text="{Binding Header.Text}" TextTrimming="CharacterEllipsis"/>
 						<TextBlock x:Name="ChangedIndicator" Text="*" Visibility="{VisibilityBinding Content.HasChanges, TrueVisibleElseCollapsed}"/>
 					</StackPanel>
 					<DataTemplate.Triggers>
-						<DataTrigger Binding="{Binding Content.HasChanges}" Value="True">
+						<DataTrigger Binding="{Binding Content.IsTempFile}" Value="True">
 							<Setter TargetName="Title" Property="Foreground" Value="#E00000"/>
 						</DataTrigger>
 					</DataTemplate.Triggers>

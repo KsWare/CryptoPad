@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Windows;
 using System.Windows.Threading;
+using JetBrains.Annotations;
 using KsWare.CryptoPad.RichTextEditor;
 using KsWare.CryptoPad.TableEditor;
 using KsWare.CryptoPad.TextEditor;
@@ -35,6 +38,10 @@ namespace KsWare.CryptoPad {
 			newFile.AddMenuItem("_Rich text document", DoNewFile, DataFormats.Rtf);
 			newFile.AddMenuItem("_Spread sheet", DoNewFile, "text/csv");
 			file.AddMenuItem("_Open..", DoOpenFile);
+			// file.AddMenuItem("_Reload", DoReloadFile);
+			// file.AddMenuItem("_Save", DoSave);
+			// file.AddMenuItem("Save _As..", DoSaveAs);
+			// file.AddMenuItem("Save A_ll", DoSaveAll);
 			file.AddMenuItem("-");
 			file.AddMenuItem("_Close", DoCloseFile);
 			file.AddMenuItem("C_lose All", DoCloseAllFiles);
@@ -46,25 +53,48 @@ namespace KsWare.CryptoPad {
 			Fields[nameof(SelectedTab)].ValueChangedEvent.add = AtTabChanged;
 			Menu = CommonMenu;
 
-			UIAccess.WindowChanged += (s, e) => {
-				if (e.NewValue != null) e.NewValue.Closing += WindowClosing;
-			};
+			// UIAccess.WindowChanged += (s, e) => {
+			// 	if (e.PreviousValue != null) e.PreviousValue.Closing -= WindowClosing;
+			// 	if (e.NewValue != null) e.NewValue.Closing += WindowClosing;
+			// };
+			// if (UIAccess.HasWindow) UIAccess.Window.Closing += WindowClosing;
+			base.ClosingEvent.add = WindowClosing;
 
 			var cmdline = ((AppVM)AppVM.Current).CommandLine;
-			cmdline.RestoreTabs = true;
+			cmdline.RestoreTabs = _communicator.IsMaster;
 			HandleCommandLine(cmdline);
 		}
 
-		private void DoRestoreTabs() {
+		private void DoSaveAll() { SaveAll(); }
+
+		private void RestoreTabs() {
+			var list = new List<string>();
 			foreach (var file in _sessionData.Files) {
-				DoOpenFile();
+				if(File.Exists(file.Path))
+					OpenFile(file.Path, file.Format, file.IsReadOnly, file.Password);
+				else {
+					Debug.WriteLine("RestoreTabs: File not found. "+file.Path);
+					list.Add($"Not found: {file.Path}");
+				}
+			}
+
+			if (list.Count > 0) {
+				MessageBox.Show("Some tabs could not be restored\n\n" + string.Join("\n", list));
 			}
 		}
 
 		private void WindowClosing(object sender, CancelEventArgs e) {
+			SaveAll();
+
 			_sessionData.Files = Tabs.Select(t => t.GetFileInfo()).ToArray();
 			FileTools.SaveSessionData(_sessionData);
 			_communicator.Close();
+		}
+
+		public void SaveAll() {
+			foreach (var tab in Tabs.Where(t => t.PasswordPanel.IsOpen == false && t.HasChanges == true)) {
+				tab.Save();
+			}
 		}
 
 		private void DoCloseAllFiles() {
@@ -93,6 +123,15 @@ namespace KsWare.CryptoPad {
 			else if (e.NewValue is TableEditorVM tbl) Menu = tbl.Menu;
 			else Menu = CommonMenu;
 			ReplacePlaceholders(Menu, CommonMenu);
+			UpdateTitle();
+		}
+
+		private void UpdateTitle() {
+			string titleFormat = "Crypto Pad [%Session%] - %FileName%";
+			var title = titleFormat
+				.Replace("%Session%", _sessionData?.Name)
+				.Replace("%FileName%", SelectedTab?.FileName != null ? Path.GetFileName(SelectedTab?.FileName) : "");
+			Title.Value = title;
 		}
 
 		private void ReplacePlaceholders(IList<MenuItemVM> items, IList<MenuItemVM> templates) {
@@ -101,18 +140,24 @@ namespace KsWare.CryptoPad {
 					var t=templates.FirstOrDefault(mi => mi.Caption == p.Caption);
 					if (t != null) items[i] = t;
 				}
-				else if(items[i].Items.Count>0){
-					var t=templates.FirstOrDefault(mi => mi.Caption == items[i].Caption);
+				else if(items[i].Items.Count>0) {
+					var t = templates.FirstOrDefault(mi => MenuItemMatch(mi, items[i]));
 					if (t != null) ReplacePlaceholders(items[i].Items, t.Items);
 				}
 			}
 		}
 
-		public ListVM<MenuItemVM> CommonMenu { get; private set; }
+		public bool MenuItemMatch(MenuItemVM a, MenuItemVM b) {
+			var aCaption = a.Caption.Replace("_", "").Replace(".", "");
+			var bCaption = b.Caption.Replace("_", "").Replace(".", "");
+			return aCaption == bCaption;
+		}
+
+		public ListVM<MenuItemVM> CommonMenu { get; [UsedImplicitly] private set; }
 
 		public IList<MenuItemVM> Menu { get => Fields.GetValue<IList<MenuItemVM>>(); set => Fields.SetValue(value); }
 
-		public ListVM<FileTabItemVM> Tabs { get; private set; }
+		public ListVM<FileTabItemVM> Tabs { get; [UsedImplicitly] private set; }
 
 		[Hierarchy(HierarchyType.Reference)]
 		public FileTabItemVM SelectedTab { get => Fields.GetValue<FileTabItemVM>(); set => Fields.SetValue(value); }
@@ -138,25 +183,51 @@ namespace KsWare.CryptoPad {
 				case 2: format = "Text"; break;
 				case 3: format = "RichText"; break;
 				case 4: format = "SpreadSheet"; break;
+				default: format = GetFormat(dlg.FileName); break;
 			}
-			OpenFile(dlg.FileName, format, dlg.ReadOnlyChecked);
+
+			SecureString password = null;
+			if (format == "Crypt") {
+				password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, CryptFile.LastPassword, dlg.FileName);
+			}
+
+			OpenFile(dlg.FileName, format, dlg.ReadOnlyChecked, password);
 		}
 
-		public void OpenFile(string fileName, string format = null, bool readOnly = false) {
-			CryptoStreamInfo info = null;
-			var sig = Path.GetExtension(fileName).ToLowerInvariant();
-			string password = null;
+		private string GetFormat(string sig) {
 			SWITCH:
 			switch (sig) {
-				case "Crypt": case ".crypt": 
-					password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, CryptFile.LastPassword, fileName);
-					info = CryptFile.OpenRead(fileName, CryptFile.LastPassword);
-					sig = info.ContentType;
+				case ".txt": return "Text";
+				case ".xps": case ".rtf": case ".wri": case ".xaml": return "RichText";
+				case ".csv": return "SpreadSheet";
+				default:
+					if (!sig.StartsWith(".")) {
+						sig = Path.GetExtension(sig).ToLowerInvariant();
+						goto SWITCH;
+					}
+					return null;
+			}
+		}
+
+		public void OpenFile(string fileName, string format = null, bool readOnly = false, SecureString password = null) {
+			var sig = format;
+			CryptoStreamInfo info = null;
+			SWITCH:
+			switch (sig) {
+				case "Crypt": case ".crypt":
+					if (password.IsNullOrEmpty()) {
+						var header = CryptFile.ReadInfo(fileName);
+						info = new CryptoStreamInfo(header, null);
+						sig = header.ContentType;
+					}
+					else {
+						info = CryptFile.OpenRead(fileName, password);
+						sig = info.ContentType;
+					}
 					goto SWITCH;
 				case "Text": case ".txt": case "text/plain": {
 					var txt = new TextEditorVM();
 					Tabs.Add(txt); SelectedTab = txt;
-					//if (info == null) info = new CryptoStreamInfo("text/plain", File.OpenRead(dlg.FileName));
 					txt.OpenFile(fileName, readOnly, info, password);
 					break;
 				}
@@ -164,14 +235,12 @@ namespace KsWare.CryptoPad {
 				case "application/xaml+xml": {
 					var rtf = new RichTextEditorVM();
 					Tabs.Add(rtf); SelectedTab = rtf;
-					//if (info == null) info = new CryptoStreamInfo("text/rtf", File.OpenRead(dlg.FileName));
 					rtf.OpenFile(fileName, readOnly, info, password);
 					break;
 				}
-				case "SpreadSheet": case "Table": case ".csv": case "text/csv": {
+				case "SpreadSheet": case "Table": case ".csv": case "text/csv": case "text/tab-separated-values": {
 					var tab = new TableEditorVM();
 					Tabs.Add(tab); SelectedTab = tab;
-					//if (info == null) info = new CryptoStreamInfo("text/csv", File.OpenRead(dlg.FileName));
 					tab.OpenFile(fileName, readOnly, info, password);
 					break;
 				}
@@ -194,29 +263,21 @@ namespace KsWare.CryptoPad {
 		}
 
 		private void DoNewFile(object parameter) {
+			FileTabItemVM tab = null;
 			switch ($"{parameter}") {
-				case "Text": case "text/plain": {
-					var tab = new TextEditorVM();
-					Tabs.Add(tab);
-					SelectedTab = tab;
-					tab.DoNewFile();
-					break;
-				}
-				case "Rich Text Format": case "application/rtf": {
-					var tab = new RichTextEditorVM();
-					Tabs.Add(tab);
-					SelectedTab = tab;
-					tab.DoNewFile();
-					break;
-				}
-				case "text/csv": {
-					var tab = new TableEditorVM();
-					Tabs.Add(tab);
-					SelectedTab = tab;
-					tab.DoFileNew();
-					break;
-				}
+				case "Text": case "text/plain": 
+					tab = new TextEditorVM(); break;
+				case "Rich Text Format": case "application/rtf": case "RichText": 
+					tab = new RichTextEditorVM(); break;
+				case "text/csv": case "Table": case "SpreadSheet":
+					tab = new TableEditorVM(); break;
+				default: throw new NotSupportedException(); // TODO handle NotSupportedException
 			}
+			Tabs.Add(tab);
+			SelectedTab = tab;
+
+			var password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, CryptFile.LastPassword, "New File");
+			tab.NewFile(password);
 		}
 
 		private void CloseTabs(FileTabItemVM[] items) {
@@ -257,10 +318,11 @@ namespace KsWare.CryptoPad {
 					data.SessionName = "Default";
 				}
 				_sessionData = FileTools.LoadSessionData(data.SessionName, createIfNotExist: true);
+				UpdateTitle();
 			}
 
 			if (data.RestoreTabs) {
-				Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, DoRestoreTabs);
+				Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, RestoreTabs);
 			}
 
 			if (data.FileName != null) {

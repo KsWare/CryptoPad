@@ -41,9 +41,24 @@ namespace KsWare.CryptoPad {
 			});
 			var highestNumber = numbers.OrderBy(v => v).LastOrDefault();
 			var n = Path.Combine(f, $"{name}{highestNumber + 1}.crypt");
-			using var fn = File.Open(n, FileMode.CreateNew);
+			using var stream = File.Open(n, FileMode.CreateNew);
 			return n;
 		}
+
+		// public static string NewTempFile(string name, string contentType, string password) {
+		// 	var f = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "KsWare", "CryptoPad", TempFilesName);
+		// 	Directory.CreateDirectory(f);
+		// 	var files=Directory.GetFiles(f, $"{name}*.crypt");
+		// 	var numbers = files.Select(f => {
+		// 		var match = Regex.Match(Path.GetFileNameWithoutExtension(f), @"\d+$", RegexOptions.Compiled);
+		// 		return match.Success ? int.Parse(match.Value) : 0;
+		// 	});
+		// 	var highestNumber = numbers.OrderBy(v => v).LastOrDefault();
+		// 	var n = Path.Combine(f, $"{name}{highestNumber + 1}.crypt");
+		// 	using var stream = File.Open(n, FileMode.CreateNew);
+		// 	CryptFile.WriteFileHeader(stream, contentType, Array.Empty<byte>());
+		// 	return n;
+		// }
 
 		public static bool IsTempFile(string fileName) {
 			return Regex.IsMatch(fileName, @"\\"+TempFilesName+@"\\", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -73,6 +88,10 @@ namespace KsWare.CryptoPad {
 				.Build();
 			using var reader = new StreamReader(fn);
 			return deserializer.Deserialize<SessionData>(reader);
+		}
+
+		public static bool IsCryptFile(string fileName) {
+			return Path.GetExtension(fileName).ToLowerInvariant() == ".crypt";
 		}
 	}
 }

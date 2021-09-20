@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security;
 using System.Text;
 using System.Windows;
 using JetBrains.Annotations;
@@ -13,7 +14,6 @@ namespace KsWare.CryptoPad.TableEditor {
 	public class TableEditorVM : FileTabItemVM {
 
 		private string _separator;
-		private string _password;
 
 		/// <inheritdoc />
 		public TableEditorVM() {
@@ -29,14 +29,16 @@ namespace KsWare.CryptoPad.TableEditor {
 		}
 		public DataGridControllerVM Editor { get; [UsedImplicitly] private set; }
 
-		public void DoFileNew() {
+		/// <param name="password"></param>
+		/// <inheritdoc />
+		public override void NewFile(SecureString password) {
+			base.NewFile(password);
 			using var csvReader = new TextFieldParser(new StringReader("A,B,C,D"));
 			csvReader.SetDelimiters(",");
 			Editor.Table = CsvTools.GetDataTable(csvReader);
 			FileName = FileTools.NewTempFile("NewTable");
-			IsTempFile = true;
-			HasChanges = false;
 			Header.Text = Path.GetFileName(FileName);
+			SaveTo(FileName, "text/csv", password);
 		}
 
 		private void DoAddColumn() {
@@ -57,8 +59,17 @@ namespace KsWare.CryptoPad.TableEditor {
 			Editor.Table.Columns[colIndex].ColumnName = newName;
 		}
 
-		public void OpenFile(string fileName, bool readOnly, CryptoStreamInfo info, string password) {
-			using var reader = new StreamReader(info?.Stream ?? File.OpenRead(fileName));
+		/// <inheritdoc/>
+		public override void OpenFile(string fileName, bool readOnly = false, CryptoStreamInfo info = null, SecureString password = null) {
+			base.OpenFile(fileName, readOnly, info, password);
+			if(PasswordPanel.IsOpen) return;
+
+			Stream stream;
+			if (info?.Stream != null) stream = info.Stream;
+			else if (FileTools.IsCryptFile(fileName)) stream = CryptFile.OpenRead(fileName, password).Stream;
+			else stream = File.OpenRead(fileName);
+
+			using var reader = new StreamReader(stream);
 			var text = reader.ReadToEnd();
 
 			var firstLine = new StringReader(text).ReadLine();
@@ -66,13 +77,7 @@ namespace KsWare.CryptoPad.TableEditor {
 			using var csvReader = new TextFieldParser(new StringReader(text));
 			csvReader.SetDelimiters(new string[] { _separator });
 			Editor.Table = CsvTools.GetDataTable(csvReader);
-
-			FileName = fileName;
-			IsReadOnly = readOnly;
-			IsTempFile = FileTools.IsTempFile(fileName);
-			HasChanges = false;
-			Header.Text = Path.GetFileName(fileName);
-			_password = password;
+			IsLoaded = true;
 		}
 
 		public override bool SaveAs() {
@@ -94,29 +99,35 @@ namespace KsWare.CryptoPad.TableEditor {
 				case 3: format = ".txt"; break;
 				default: format = null; break;
 			}
-			SaveTo(dlg.FileName, format, askPassword:true);
+
+			if(format==".crypt")
+				PasswordPanel.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordPanel.Password ?? CryptFile.LastPassword);
+
+			SaveTo(dlg.FileName, format, PasswordPanel.Password);
 			return true;
 		}
 
-		protected override void SaveTo(string fileName, string format, bool askPassword) {
-			string password=null;
+		protected override void SaveTo(string fileName, string format, SecureString password) {
+			if (FileTools.IsCryptFile(fileName)) format = ".crypt";
+			string contentType;
 			SWITCH:
 			switch (format) {
 				case ".crypt": {
-					if(askPassword || _password == null)
-						password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, _password ?? CryptFile.LastPassword);
+					contentType = "text/csv";
 					using var memStream = new MemoryStream();
 					using var writer = new StreamWriter(memStream, new UTF8Encoding(false));
 					CsvTools.ToCsv(Editor.Table, writer, new CsvOptions { Separator = ',' });
 					memStream.Position = 0;
-					CryptFile.Write(memStream, fileName, CryptFile.LastPassword, "text/csv");
+					CryptFile.Write(memStream, fileName, password, "text/csv");
 					break;
 				}
 				case ".csv": case "text/csv": {
+					contentType = "text/csv";
 					CsvTools.SaveAsCsv(Editor.Table, fileName, new CsvOptions { Separator = ',' });
 					break;
 				}
 				case ".txt": case "text/tab-separated-values": {
+					contentType = "text/tab-separated-values";
 					CsvTools.SaveAsCsv(Editor.Table, fileName, new CsvOptions { Separator = '\t' });
 					break;
 				}
@@ -134,8 +145,8 @@ namespace KsWare.CryptoPad.TableEditor {
 			HasChanges = false;
 			IsReadOnly = false;
 			IsTempFile = FileTools.IsTempFile(fileName);
-			_password = password;
 			Header.Text = Path.GetFileName(fileName);
+			ContentType = contentType;
 		}
 
 	}
