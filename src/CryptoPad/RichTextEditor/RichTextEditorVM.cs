@@ -62,6 +62,7 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			if(format==".crypt")
 				PasswordPanel.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordPanel.Password ?? CryptFile.LastPassword);
 
+			CommitEdit();
 			SaveTo(dlg.FileName, format, PasswordPanel.Password);
 			return true;
 		}
@@ -167,6 +168,9 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			Header.Text = Path.GetFileName(FileName);
 			SaveTo(FileName, "application/vnd.ms-xpsdocument", password);
 		}
+
+		/// <inheritdoc />
+		public override void CommitEdit() { }
 
 		/// <inheritdoc/>
 		public override void OpenFile(string fileName, bool readOnly = false, CryptoStreamInfo info = null, SecureString password = null) {

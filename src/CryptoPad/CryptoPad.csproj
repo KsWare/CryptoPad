@@ -7,6 +7,7 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <AssemblyName>CryptoPad</AssemblyName>
     <RootNamespace>KsWare.CryptoPad</RootNamespace>
+    <Configurations>Debug;Release;Debug2</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

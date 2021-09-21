@@ -1,4 +1,5 @@
-﻿using System.Windows.Controls;
+﻿using System.Diagnostics;
+using System.Windows.Controls;
 
 namespace KsWare.CryptoPad.TableEditor {
 
@@ -20,8 +21,23 @@ namespace KsWare.CryptoPad.TableEditor {
 				if (DataContext is DataGridControllerVM vm) vm.Data = this.DataGrid;
 			};
 
+			// TODO handle Escape. 1 cancel edit cell, 2 cancel edit row
+
+			DataGrid.LostFocus += (s, e) => {
+				Debug.WriteLine($"DataGrid.LostFocus");
+			};
+
+			DataGrid.IsKeyboardFocusWithinChanged += (s, e) => {
+				Debug.WriteLine($"DataGrid.IsKeyboardFocusWithinChanged {e.NewValue}");
+			};
+
 			// TODO workaround for: source is updated only at LostFocus but not at LostKeyboardFocus (switch between tabs, open menu, ...)
 			DataGrid.PreviewLostKeyboardFocus += (o, e) => {
+				Debug.WriteLine($"DataGrid.PreviewLostKeyboardFocus {e.OldFocus.GetType().Name} => {e.NewFocus.GetType().Name}");
+				if (!DataGrid.IsKeyboardFocusWithin) {
+
+				}
+				// DataGrid.CommitEdit(DataGridEditingUnit.Row, true);
 				// var bindingExpression = BindingOperations.GetBindingExpression(DataGrid, System.Windows.Controls.DataGrid.ItemsSourceProperty);
 				// bindingExpression.UpdateSource();
 				if (e.NewFocus is TabItem) {

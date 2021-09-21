@@ -191,7 +191,7 @@ namespace KsWare.CryptoPad {
 		}
 
 		public virtual void OnClose(bool noSave = false) {
-			if(HasChanges && noSave==false) DoSave();
+			if(noSave==false) Save();
 		}
 
 		/// <summary>
@@ -230,10 +230,13 @@ namespace KsWare.CryptoPad {
 		}
 
 		public virtual void Save() {
-			if(!HasChanges || PasswordPanel.IsOpen || IsReadOnly ) return;
-
+			if(PasswordPanel.IsOpen || IsReadOnly) return;
+			CommitEdit();
+			if(!HasChanges) return;
 			SaveTo(FileName, GetFormat(FileName), PasswordPanel.Password);
 		}
+
+		public abstract void CommitEdit();
 	}
 
 }

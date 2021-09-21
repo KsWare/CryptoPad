@@ -10,20 +10,25 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoPad.Tests", "CryptoPad.Tests\CryptoPad.Tests.csproj", "{927FB735-6AEB-45E1-B680-69E2EE17DBB7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoPad.Tests", "CryptoPad.Tests\CryptoPad.Tests.csproj", "{927FB735-6AEB-45E1-B680-69E2EE17DBB7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug2|Any CPU = Debug2|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{DD3538BB-D4D7-409B-B48E-1EDFE8FC5E51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DD3538BB-D4D7-409B-B48E-1EDFE8FC5E51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD3538BB-D4D7-409B-B48E-1EDFE8FC5E51}.Debug2|Any CPU.ActiveCfg = Debug2|Any CPU
+		{DD3538BB-D4D7-409B-B48E-1EDFE8FC5E51}.Debug2|Any CPU.Build.0 = Debug2|Any CPU
 		{DD3538BB-D4D7-409B-B48E-1EDFE8FC5E51}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD3538BB-D4D7-409B-B48E-1EDFE8FC5E51}.Release|Any CPU.Build.0 = Release|Any CPU
 		{927FB735-6AEB-45E1-B680-69E2EE17DBB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{927FB735-6AEB-45E1-B680-69E2EE17DBB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{927FB735-6AEB-45E1-B680-69E2EE17DBB7}.Debug2|Any CPU.ActiveCfg = Debug2|Any CPU
+		{927FB735-6AEB-45E1-B680-69E2EE17DBB7}.Debug2|Any CPU.Build.0 = Debug2|Any CPU
 		{927FB735-6AEB-45E1-B680-69E2EE17DBB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{927FB735-6AEB-45E1-B680-69E2EE17DBB7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection

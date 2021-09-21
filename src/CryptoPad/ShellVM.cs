@@ -44,7 +44,7 @@ namespace KsWare.CryptoPad {
 			// file.AddMenuItem("Save A_ll", DoSaveAll);
 			file.AddMenuItem("-");
 			file.AddMenuItem("_Close", DoCloseFile);
-			file.AddMenuItem("C_lose All", DoCloseAllFiles);
+			file.AddMenuItem("C_lose All", DoCloseAll);
 			file.AddMenuItem("-");
 			file.AddMenuItem("E_xit", DoExit);
 			// file.AddMenuItem("_Save", DoSaveFile);
@@ -86,18 +86,19 @@ namespace KsWare.CryptoPad {
 		private void WindowClosing(object sender, CancelEventArgs e) {
 			SaveAll();
 
+			if(MessageBox.Show("Close CryptoPad?","Acknowledge",MessageBoxButton.OKCancel)!=MessageBoxResult.OK) return;
+
 			_sessionData.Files = Tabs.Select(t => t.GetFileInfo()).ToArray();
 			FileTools.SaveSessionData(_sessionData);
 			_communicator.Close();
 		}
 
 		public void SaveAll() {
-			foreach (var tab in Tabs.Where(t => t.PasswordPanel.IsOpen == false && t.HasChanges == true)) {
-				tab.Save();
-			}
+			Tabs.Where(t => t.PasswordPanel.IsOpen == false).ForEach(t=>t.Save());
 		}
 
-		private void DoCloseAllFiles() {
+		private void DoCloseAll() {
+			Tabs.ForEach(t=>t.OnClose());
 			SelectedTab = null;
 			Tabs.Clear();
 		}

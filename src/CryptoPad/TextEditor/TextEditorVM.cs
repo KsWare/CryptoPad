@@ -43,9 +43,14 @@ namespace KsWare.CryptoPad.TextEditor {
 		}
 
 		/// <inheritdoc />
+		public override void CommitEdit() {
+			Editor.RefreshText();
+		}
+
+		/// <inheritdoc />
 		protected override void SaveTo(string fileName, string format, SecureString password) {
-			if (FileTools.IsCryptFile(fileName)) format = ".crypt";
 			Editor.RefreshText(); //workaround for Text not updated on Window.Closing
+			if (FileTools.IsCryptFile(fileName)) format = ".crypt";
 			string contentType;
 			SWITCH:
 			switch (format) {
@@ -98,6 +103,7 @@ namespace KsWare.CryptoPad.TextEditor {
 			if(format==".crypt")
 				PasswordPanel.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordPanel.Password ?? CryptFile.LastPassword);
 
+			CommitEdit();
 			SaveTo(dlg.FileName, format, PasswordPanel.Password);
 			return true;
 		}

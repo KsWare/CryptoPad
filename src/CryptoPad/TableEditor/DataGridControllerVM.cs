@@ -51,6 +51,11 @@ namespace KsWare.CryptoPad.TableEditor {
 			// var newValue = editingTextBox.Text;
 			OnContentChanged();
 		}
+
+		public void CommitEdit() {
+			if(DataGrid==null) return;
+			DataGrid.CommitEdit(DataGridEditingUnit.Row, true);
+		}
 	}
 
 }

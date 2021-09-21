@@ -41,6 +41,11 @@ namespace KsWare.CryptoPad.TableEditor {
 			SaveTo(FileName, "text/csv", password);
 		}
 
+		/// <inheritdoc />
+		public override void CommitEdit() {
+			Editor.CommitEdit();
+		}
+
 		private void DoAddColumn() {
 			Editor.Table.Columns.Add($"C{Editor.Table.Columns.Count}");
 		}
@@ -83,7 +88,7 @@ namespace KsWare.CryptoPad.TableEditor {
 		public override bool SaveAs() {
 			var dlg = new SaveFileDialog() {
 				Title = "Save table as...",
-				Filter = "Crypto-File|*.crypt"+
+				Filter = "CryptoPad File|*.crypt"+
 				         "|Comma-Separated (*.csv)|*.csv"+
 						 "|Tab-Separated (*.txt)|*.csv",
 				         //"|All Files (*.*)|*.*"
@@ -103,6 +108,7 @@ namespace KsWare.CryptoPad.TableEditor {
 			if(format==".crypt")
 				PasswordPanel.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordPanel.Password ?? CryptFile.LastPassword);
 
+			CommitEdit();
 			SaveTo(dlg.FileName, format, PasswordPanel.Password);
 			return true;
 		}
