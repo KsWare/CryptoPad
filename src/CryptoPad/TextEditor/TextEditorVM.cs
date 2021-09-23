@@ -101,10 +101,10 @@ namespace KsWare.CryptoPad.TextEditor {
 			}
 
 			if(format==".crypt")
-				PasswordPanel.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordPanel.Password ?? CryptFile.LastPassword);
+				PasswordOverlay.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordOverlay.Password ?? CryptFile.LastPassword);
 
 			CommitEdit();
-			SaveTo(dlg.FileName, format, PasswordPanel.Password);
+			SaveTo(dlg.FileName, format, PasswordOverlay.Password);
 			return true;
 		}
 
@@ -125,7 +125,7 @@ namespace KsWare.CryptoPad.TextEditor {
 		/// <inheritdoc/>
 		public override void OpenFile(string fileName, bool readOnly = false, CryptoStreamInfo info = null, SecureString password = null) {
 			base.OpenFile(fileName, readOnly, info, password);
-			if(PasswordPanel.IsOpen) return;
+			if(PasswordOverlay.IsOpen) return;
 
 			Stream stream;
 			if (info?.Stream != null) stream = info.Stream;

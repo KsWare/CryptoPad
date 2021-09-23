@@ -13,7 +13,8 @@
 	>
 	<Grid>
 		<local:RichTextBoxControllerView DataContext="{Binding Editor}"/>
-		<overlays:PasswordPanelView DataContext="{Binding PasswordPanel}" d:IsHidden="True"/>
-		<overlays:ErrorPanelView DataContext="{Binding ErrorPanel}" d:IsHidden="True"/>
+		<overlays:LoadingOverlayView DataContext="{Binding LoadingOverlay}" d:IsHidden="True"/>
+		<overlays:PasswordOverlayView DataContext="{Binding PasswordOverlay}" d:IsHidden="True"/>
+		<overlays:ErrorOverlayView DataContext="{Binding ErrorOverlay}" d:IsHidden="True"/>
 	</Grid>
 </UserControl>

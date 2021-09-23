@@ -12,12 +12,9 @@ namespace KsWare.CryptoPad {
 		public static readonly DependencyProperty PasswordProperty = DependencyProperty.Register(
 			"Password", typeof(SecureString), typeof(PasswordDialog), new FrameworkPropertyMetadata(default(SecureString), (d, e) => ((PasswordDialog) d).OnPasswordChanged(e)));
 
-		private void OnPasswordChanged(DependencyPropertyChangedEventArgs e) {
-			var newValue = (SecureString) e.NewValue;
-			var oldValue = (SecureString) e.OldValue;
-
-			PasswordBox.Password = newValue.ToInsecureString();
-			PasswordBox.SelectAll();
+		public PasswordDialog() {
+			InitializeComponent();
+			Loaded+=(s, e) => PasswordBox.Focus();
 		}
 
 		// public string Password {
@@ -43,11 +40,14 @@ namespace KsWare.CryptoPad {
 			}
 		}
 
+		private void OnPasswordChanged(DependencyPropertyChangedEventArgs e) {
+			var newValue = (SecureString) e.NewValue;
+			var oldValue = (SecureString) e.OldValue;
 
-		public PasswordDialog() {
-			InitializeComponent();
-			PasswordBox.Focus();
+			PasswordBox.Password = newValue.ToInsecureString();
+			PasswordBox.SelectAll();
 		}
+
 
 		private void OkClick(object sender, RoutedEventArgs e) {
 			Password = PasswordBox.SecurePassword;

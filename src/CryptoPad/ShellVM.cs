@@ -94,7 +94,7 @@ namespace KsWare.CryptoPad {
 		}
 
 		public void SaveAll() {
-			Tabs.Where(t => t.PasswordPanel.IsOpen == false).ForEach(t=>t.Save());
+			Tabs.Where(t => t.PasswordOverlay.IsOpen == false).ForEach(t=>t.Save());
 		}
 
 		private void DoCloseAll() {
@@ -118,13 +118,18 @@ namespace KsWare.CryptoPad {
 		}
 
 		private void AtTabChanged(object sender, ValueChangedEventArgs e) {
-			if (false) ;
-			else if (e.NewValue is TextEditorVM txt) Menu = txt.Menu;
-			else if (e.NewValue is RichTextEditorVM rtf) Menu = rtf.Menu;
-			else if (e.NewValue is TableEditorVM tbl) Menu = tbl.Menu;
-			else Menu = CommonMenu;
+			(e.PreviousValue as ObjectVM)?.NotifyDeactivated();
+
+			if (e.NewValue is FileTabItemVM tab) {
+				Menu = tab.Menu;
+			}
+			else {
+				Menu = CommonMenu;
+			}
 			ReplacePlaceholders(Menu, CommonMenu);
 			UpdateTitle();
+
+			(e.NewValue as ObjectVM)?.NotifyActivated(this);
 		}
 
 		private void UpdateTitle() {
@@ -211,8 +216,9 @@ namespace KsWare.CryptoPad {
 		}
 
 		public void OpenFile(string fileName, string format = null, bool readOnly = false, SecureString password = null) {
-			var sig = format;
+			var sig = FileTools.IsCryptFile(fileName) ? ".crypt" : format;
 			CryptoStreamInfo info = null;
+			FileTabItemVM tab;
 			SWITCH:
 			switch (sig) {
 				case "Crypt": case ".crypt":
@@ -227,22 +233,16 @@ namespace KsWare.CryptoPad {
 					}
 					goto SWITCH;
 				case "Text": case ".txt": case "text/plain": {
-					var txt = new TextEditorVM();
-					Tabs.Add(txt); SelectedTab = txt;
-					txt.OpenFile(fileName, readOnly, info, password);
+					tab = new TextEditorVM();
 					break;
 				}
 				case "RichText": case ".xaml": case ".rtf": case "text/rtf": case ".xps": case "application/vnd.ms-xpsdocument": case "application/rtf":
 				case "application/xaml+xml": {
-					var rtf = new RichTextEditorVM();
-					Tabs.Add(rtf); SelectedTab = rtf;
-					rtf.OpenFile(fileName, readOnly, info, password);
+					tab = new RichTextEditorVM();
 					break;
 				}
 				case "SpreadSheet": case "Table": case ".csv": case "text/csv": case "text/tab-separated-values": {
-					var tab = new TableEditorVM();
-					Tabs.Add(tab); SelectedTab = tab;
-					tab.OpenFile(fileName, readOnly, info, password);
+					tab = new TableEditorVM();
 					break;
 				}
 				default:
@@ -253,6 +253,13 @@ namespace KsWare.CryptoPad {
 					MessageBox.Show(Application.Current.MainWindow, $"Unsupported file format '{format}'.", "Open File...", MessageBoxButton.OK, MessageBoxImage.Warning);
 					throw new NotSupportedException();
 			}
+
+			Tabs.Add(tab); SelectedTab = tab;
+			tab.LoadingOverlay.IsOpen = true;
+			ApplicationDispatcher.BeginInvoke(DispatcherPriority.Normal, () => {
+				tab.OpenFile(fileName, readOnly, info, password);
+				tab.LoadingOverlay.IsOpen = false;
+			});
 		}
 
 		private void DoSaveFile() {

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Security;
 using System.Windows;
+using System.Windows.Threading;
 using JetBrains.Annotations;
 using KsWare.CryptoPad.Dialogs;
 using KsWare.CryptoPad.Overlays;
@@ -54,13 +55,13 @@ namespace KsWare.CryptoPad {
 			// In neue Instanz verschieben
 			// In neue Instanz duplizieren
 
-			PasswordPanel.OKCommand = PasswordChangedAction;
+			PasswordOverlay.OKCommand = PasswordChangedAction;
 
 			FieldBindingOperations.SetBinding(writeProtection.Fields[nameof(MenuItemVM.IsChecked)],new FieldBinding(Fields[nameof(IsReadOnly)], BindingMode.TwoWay));
 		}
 
 		private void DoChangePassword() {
-			PasswordPanel.IsOpen = true;
+			PasswordOverlay.IsOpen = true;
 		}
 
 		/// <summary>
@@ -74,22 +75,29 @@ namespace KsWare.CryptoPad {
 		/// </summary>
 		[UsedImplicitly]
 		protected virtual void DoPasswordChanged() {
-			if (PasswordPanel.Password.Length == 0) return; //leave open
-			PasswordPanel.IsOpen = false;
-			if (!IsLoaded && FileName!=null && Path.GetExtension(FileName)?.ToLowerInvariant()==".crypt") {
-				try {
-					var info = CryptFile.OpenRead(FileName, PasswordPanel.Password);
-					OpenFile(FileName, IsReadOnly, info, PasswordPanel.Password);
-				}
-				catch (Exception ex) {
-					PasswordPanel.IsOpen = true;
-					throw;// TODO user friendly error message
-				}
+			if (PasswordOverlay.Password.Length == 0) return; //leave open
+			PasswordOverlay.IsOpen = false;
+			if (!IsLoaded && FileTools.IsCryptFile(FileName)) {
+				LoadingOverlay.IsOpen = true;
+				ApplicationDispatcher.BeginInvoke(DispatcherPriority.Normal, () => {
+					try {
+						var info = CryptFile.OpenRead(FileName, PasswordOverlay.Password);
+						OpenFile(FileName, IsReadOnly, info, PasswordOverlay.Password);
+					}
+					catch (Exception ex) {
+						PasswordOverlay.IsOpen = true;
+						ErrorOverlay.Message = ex.Message;
+						ErrorOverlay.ExceptionMessage = ex.ToString();
+						ErrorOverlay.IsOpen = true;
+					}
+					LoadingOverlay.IsOpen = false;
+				});
 			}
 		}
 
-		public PasswordPanelVM PasswordPanel { get; [UsedImplicitly] private set; }
-		public ErrorPanelVM ErrorPanel { get; [UsedImplicitly] private set; }
+		public LoadingOverlayVM LoadingOverlay { get; [UsedImplicitly] private set; }
+		public PasswordOverlayVM PasswordOverlay { get; [UsedImplicitly] private set; }
+		public ErrorOverlayVM ErrorOverlay { get; [UsedImplicitly] private set; }
 
 		protected virtual void InitFileMenu() {
 			var file = Menu.AddMenuItem("_File");
@@ -109,8 +117,12 @@ namespace KsWare.CryptoPad {
 		}
 
 		private void DoReload() {
-			if(PasswordPanel.IsOpen) return;
-			OpenFile(FileName, IsReadOnly, CryptFile.OpenRead(FileName, PasswordPanel.Password), PasswordPanel.Password);
+			if (ErrorOverlay.IsOpen) {
+				ErrorOverlay.IsOpen = false;
+				PasswordOverlay.IsOpen = FileTools.IsCryptFile(FileName);
+			}
+			if(PasswordOverlay.IsOpen) return;
+			OpenFile(FileName, IsReadOnly, CryptFile.OpenRead(FileName, PasswordOverlay.Password), PasswordOverlay.Password);
 		}
 
 		private void DoSaveAll() {
@@ -203,8 +215,8 @@ namespace KsWare.CryptoPad {
 		/// <param name="password">The password [optional]</param>
 		public virtual void OpenFile(string fileName, bool readOnly = false, CryptoStreamInfo info = null, SecureString password = null) {
 			if (FileTools.IsCryptFile(fileName) && info?.Stream == null) {
-				PasswordPanel.Password = password;
-				PasswordPanel.IsOpen = password.IsNullOrEmpty();
+				PasswordOverlay.Password = password;
+				PasswordOverlay.IsOpen = password.IsNullOrEmpty();
 				IsLoaded = false;
 			}
 			else {
@@ -218,25 +230,53 @@ namespace KsWare.CryptoPad {
 			Header.Text = Path.GetFileName(fileName);
 			// _fileType = Path.GetExtension(fileName);
 			ContentType = info?.ContentType;
-			PasswordPanel.Password = password;
+			PasswordOverlay.Password = password;
+			
+			if(IsSelected) FocusFirst();
 		}
 
 		public virtual void NewFile(SecureString password) {
 			IsTempFile = true;
 			HasChanges = false;
 			IsReadOnly = false;
-			PasswordPanel.Password = password;
-			PasswordPanel.IsOpen = password.IsNullOrEmpty();
+			PasswordOverlay.Password = password;
+			PasswordOverlay.IsOpen = password.IsNullOrEmpty();
+
+			if(IsSelected) FocusFirst();
 		}
 
 		public virtual void Save() {
-			if(PasswordPanel.IsOpen || IsReadOnly) return;
+			if(PasswordOverlay.IsOpen || IsReadOnly || ErrorOverlay.IsOpen) return;
 			CommitEdit();
 			if(!HasChanges) return;
-			SaveTo(FileName, GetFormat(FileName), PasswordPanel.Password);
+			SaveTo(FileName, GetFormat(FileName), PasswordOverlay.Password);
 		}
 
 		public abstract void CommitEdit();
+
+		/// <inheritdoc />
+		protected override void OnActivated(IObjectVM refferer) {
+			base.OnActivated(refferer);
+			IsSelected = true;
+
+			FocusFirst();
+		}
+
+		private void FocusFirst() {
+			//TODO REVISE set focus logic
+			if(PasswordOverlay.IsOpen) PasswordOverlay.Focus();
+			else if(ErrorOverlay.IsOpen) ErrorOverlay.Focus();
+			else if(LoadingOverlay.IsOpen) LoadingOverlay.Focus();
+			else if(this is TextEditorVM txt) txt.Editor.FocusEditor();
+			else if(this is RichTextEditorVM rtf) rtf.Editor.FocusEditor();
+			else if(this is TableEditorVM tbl) tbl.Editor.FocusEditor();
+		}
+
+		/// <inheritdoc />
+		protected override void OnDeactivated() {
+			base.OnDeactivated();
+			IsSelected = false;
+		}
 	}
 
 }

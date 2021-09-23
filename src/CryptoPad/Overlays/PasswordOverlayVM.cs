@@ -4,10 +4,10 @@ using KsWare.Presentation.ViewModelFramework;
 
 namespace KsWare.CryptoPad.Overlays {
 
-	public class PasswordPanelVM : ObjectVM {
+	public class PasswordOverlayVM : BaseOverlayVM {
 
 		/// <inheritdoc />
-		public PasswordPanelVM() {
+		public PasswordOverlayVM() {
 			RegisterChildren(()=>this);
 		}
 
@@ -15,8 +15,6 @@ namespace KsWare.CryptoPad.Overlays {
 		public SecureString Password { get => Fields.GetValue<SecureString>(); set => Fields.SetValue(value); }
 
 		public ICommand OKCommand { get => Fields.GetValue<ICommand>(); set => Fields.SetValue(value); }
-
-		public bool IsOpen { get => Fields.GetValue<bool>(); set => Fields.SetValue(value); }
 	}
 
 }

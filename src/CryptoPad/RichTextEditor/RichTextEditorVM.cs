@@ -60,10 +60,10 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			}
 
 			if(format==".crypt")
-				PasswordPanel.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordPanel.Password ?? CryptFile.LastPassword);
+				PasswordOverlay.Password = CryptFile.LastPassword = PasswordDialog.GetPassword(Application.Current.MainWindow, PasswordOverlay.Password ?? CryptFile.LastPassword);
 
 			CommitEdit();
-			SaveTo(dlg.FileName, format, PasswordPanel.Password);
+			SaveTo(dlg.FileName, format, PasswordOverlay.Password);
 			return true;
 		}
 
@@ -175,7 +175,7 @@ namespace KsWare.CryptoPad.RichTextEditor {
 		/// <inheritdoc/>
 		public override void OpenFile(string fileName, bool readOnly = false, CryptoStreamInfo info = null, SecureString password = null) {
 			base.OpenFile(fileName, readOnly, info, password);
-			if(PasswordPanel.IsOpen) return;
+			if(PasswordOverlay.IsOpen) return;
 
 			// Derzeit werden die Datenformate Rtf, Text, Xaml und XamlPackage
 			var doc = new FlowDocument();
@@ -193,7 +193,7 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			}
 			catch (CryptographicException ex) {
 				// https://stackoverflow.com/questions/8583112/padding-is-invalid-and-cannot-be-removed
-				PasswordPanel.IsOpen = true;
+				PasswordOverlay.IsOpen = true;
 				throw; //TODO
 			}
 			catch (Exception ex) {

@@ -58,7 +58,6 @@ namespace KsWare.CryptoPad.TextEditor {
 					sv.ScrollToVerticalOffset(_cache.VerticalOffset);
 				}
 
-				t.Focus();
 				t.TextChanged += AtTextBoxOnTextChanged;
 			}
 		}

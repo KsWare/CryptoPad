@@ -17,8 +17,8 @@ namespace KsWare.CryptoPad.Overlays {
 	/// <summary>
 	/// Interaction logic for ErrorPanelView.xaml
 	/// </summary>
-	public partial class ErrorPanelView : UserControl {
-		public ErrorPanelView() {
+	public partial class ErrorOverlayView : UserControl {
+		public ErrorOverlayView() {
 			InitializeComponent();
 		}
 	}

@@ -6,10 +6,13 @@ namespace KsWare.CryptoPad.TableEditor {
 
 	public class DataGridControllerVM : EditorControllerVM<DataGrid,DataTable> {
 
-		private DataGrid _cache;
+		private DataGridData _cache;
 
 		public DataGridControllerVM() {
 			RegisterChildren(() => this);
+			Fields[nameof(Table)].ValueChanged += (s, e) => {
+				if (Data != null) Data.ItemsSource = ((DataTable)e.NewValue)?.DefaultView;
+			};
 		}
 
 		public DataTable Table { get => Fields.GetValue<DataTable>(); set => Fields.SetValue(value); }
@@ -21,7 +24,12 @@ namespace KsWare.CryptoPad.TableEditor {
 			base.OnDataChanged(e);
 
 			if (e.PreviousData is DataGrid d) {
-				_cache = d;
+				var sv = d.GetScrollViewer();
+				_cache = new DataGridData {
+					HorizontalOffset=sv.HorizontalOffset,
+					VerticalOffset=sv.VerticalOffset,
+				};
+				d.ItemsSource = null;
 				d.CellEditEnding -= DataGridOnCellEditEnding;
 			}
 
@@ -32,16 +40,13 @@ namespace KsWare.CryptoPad.TableEditor {
 					
 				}
 				else {
-					var c = _cache.GetScrollViewer();
 					var v = dg.GetScrollViewer();
-					v.ScrollToHorizontalOffset(c.HorizontalOffset);
-					v.ScrollToVerticalOffset(c.VerticalOffset);
+					v.ScrollToHorizontalOffset(_cache.HorizontalOffset);
+					v.ScrollToVerticalOffset(_cache.VerticalOffset);
 					// foreach (var cell in _cache.SelectedCells) {
 					// 	var col = cell.Column;
 					// }
 				}
-
-				dg.Focus();
 			}
 		}
 
@@ -53,9 +58,14 @@ namespace KsWare.CryptoPad.TableEditor {
 		}
 
 		public void CommitEdit() {
-			if(DataGrid==null) return;
+			if (DataGrid == null) return;
 			DataGrid.CommitEdit(DataGridEditingUnit.Row, true);
 		}
+	}
+
+	public class DataGridData {
+		public double HorizontalOffset { get; set; }
+		public double VerticalOffset { get; set; }
 	}
 
 }
