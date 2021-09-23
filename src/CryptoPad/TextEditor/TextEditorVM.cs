@@ -3,7 +3,6 @@ using System.IO;
 using System.Security;
 using System.Windows;
 using System.Windows.Input;
-using JetBrains.Annotations;
 using Microsoft.Win32;
 
 namespace KsWare.CryptoPad.TextEditor {
@@ -32,7 +31,10 @@ namespace KsWare.CryptoPad.TextEditor {
 			
 		}
 
-		public TextBoxControllerVM Editor { get; [UsedImplicitly] private set; }
+		public new TextBoxControllerVM Editor {
+			get => (TextBoxControllerVM)base.Editor;
+			private set => base.Editor = value;
+		}
 
 		public override void NewFile(SecureString password) {
 			base.NewFile(password);

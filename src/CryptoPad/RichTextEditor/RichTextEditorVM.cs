@@ -31,7 +31,10 @@ namespace KsWare.CryptoPad.RichTextEditor {
 			Editor.ContentChanged += (s, e) => HasChanges = true;
 		}
 
-		public RichTextControllerVM Editor { get; private set; }
+		public new RichTextControllerVM Editor {
+			get => (RichTextControllerVM)base.Editor;
+			private set => base.Editor = value;
+		}
 
 		private void DoViewOptions() {
 			

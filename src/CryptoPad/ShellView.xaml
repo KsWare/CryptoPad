@@ -9,7 +9,7 @@
     xmlns:cryptoPad="clr-namespace:KsWare.CryptoPad"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance cryptoPad:ShellVM, IsDesignTimeCreatable=False}"
-    Title="{Binding Title.Value}" Height="250" Width="400" Icon="/app.ico">
+    Title="{Binding Title.Value}" Height="400" Width="500" Icon="/app.ico">
 	<Window.Resources>
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
@@ -19,6 +19,9 @@
 	</Window.Resources>
 	<DockPanel>
 		<Menu DockPanel.Dock="Top" ItemsSource="{Binding Menu}" ItemContainerStyle="{DynamicResource MenuItemVMStyle}"/>
+		<StackPanel DockPanel.Dock="Top">
+			<rtf:RichTextToolbarView CommandTarget="{Binding SelectedTab.Editor.View}"/>
+		</StackPanel>
 	    <TabControl ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}" TabStripPlacement="Top" Margin="3 0 3 3">
 			<TabControl.ItemContainerStyle>
 				<Style TargetType="{x:Type TabItem}">

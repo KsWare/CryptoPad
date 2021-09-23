@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using KsWare.Presentation.Core.Providers;
 using KsWare.Presentation.ViewModelFramework;
 
 namespace KsWare.CryptoPad {
@@ -19,10 +20,19 @@ namespace KsWare.CryptoPad {
 		public void FocusEditor() { //TODO REVISE set focus logic
 			Data?.Focus();
 		}
+
+		/// <inheritdoc />
+		protected override void OnDataChanged(DataChangedEventArgs e) {
+			base.OnDataChanged(e);
+			OnPropertyChanged(nameof(View));
+		}
+
+		public UIElement View => Data;
 	}
 
 	public interface IEditorController {
 		void FocusEditor();
+		UIElement View { get; }
 	}
 
 }

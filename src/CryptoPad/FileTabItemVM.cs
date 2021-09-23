@@ -60,6 +60,8 @@ namespace KsWare.CryptoPad {
 			FieldBindingOperations.SetBinding(writeProtection.Fields[nameof(MenuItemVM.IsChecked)],new FieldBinding(Fields[nameof(IsReadOnly)], BindingMode.TwoWay));
 		}
 
+		public IEditorController Editor { get; protected set; }
+
 		private void DoChangePassword() {
 			PasswordOverlay.IsOpen = true;
 		}

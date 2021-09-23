@@ -11,75 +11,37 @@
     <DockPanel>
 		<!-- <WrapPanel DockPanel.Dock="Top" > -->
 		<!-- 	<FrameworkElement.Resources> -->
-		<!-- 		<Style TargetType="{x:Type Button}" x:Key="formatTextStyle"> -->
-		<!-- 			<Setter Property="FontFamily" Value="Palatino Linotype"/> -->
+		<!-- 		<Style TargetType="{x:Type ButtonBase}" x:Key="FontAwesomeSolid"> -->
+		<!-- 			~1~ <Setter Property="FontFamily" Value="Font Awesome 6 Free Solid"/> @1@ -->
+		<!-- 			<Setter Property="FontFamily" Value="Font Awesome 6 Free Solid"/> -->
 		<!-- 			<Setter Property="Width" Value="24"/> -->
 		<!-- 			<Setter Property="FontSize" Value ="14"/> -->
 		<!-- 			<Setter Property="CommandTarget" Value="{Binding ElementName=RichTextBox}"/> -->
 		<!-- 		</Style> -->
-	 <!-- -->
-		<!-- 		<Style TargetType="{x:Type Button}" x:Key="formatImageStyle"> -->
-		<!-- 			<Setter Property="Width" Value="24"/> -->
-		<!-- 			<Setter Property="CommandTarget" Value="{Binding ElementName=RichTextBox}"/> -->
-		<!-- 		</Style> -->
 		<!-- 	</FrameworkElement.Resources> -->
-		<!-- 	<Button Style="{StaticResource formatImageStyle}" Command="ApplicationCommands.Cut" ToolTip="Cut"> -->
-	 <!--          <Image Source="Images\EditCut.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="ApplicationCommands.Copy" ToolTip="Copy"> -->
-	 <!--          <Image Source="Images\EditCopy.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="ApplicationCommands.Paste" ToolTip="Paste"> -->
-	 <!--          <Image Source="Images\EditPaste.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="ApplicationCommands.Undo" ToolTip="Undo"> -->
-	 <!--          <Image Source="Images\EditUndo.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="ApplicationCommands.Redo" ToolTip="Redo"> -->
-	 <!--          <Image Source="Images\EditRedo.png"></Image> -->
-	 <!--        </Button> -->
-	 <!-- -->
-	 <!--        <Button Style="{StaticResource formatTextStyle}" Command="EditingCommands.ToggleBold" ToolTip="Bold"> -->
-	 <!--          <TextBlock FontWeight="Bold">B</TextBlock> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatTextStyle}" Command="EditingCommands.ToggleItalic" ToolTip="Italic"> -->
-	 <!--          <TextBlock FontStyle="Italic" FontWeight="Bold">I</TextBlock> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatTextStyle}" Command="EditingCommands.ToggleUnderline" ToolTip="Underline"> -->
-	 <!--          <TextBlock TextDecorations="Underline" FontWeight="Bold">U</TextBlock> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.IncreaseFontSize" ToolTip="Grow Font"> -->
-	 <!--          <Image Source="Images\CharacterGrowFont.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.DecreaseFontSize" ToolTip="Shrink Font"> -->
-	 <!--          <Image Source="Images\CharacterShrinkFont.png"></Image> -->
-	 <!--        </Button> -->
-	 <!-- -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.ToggleBullets" ToolTip="Bullets"> -->
-	 <!--          <Image Source="Images\ListBullets.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.ToggleNumbering" ToolTip="Numbering"> -->
-	 <!--          <Image Source="Images/ListNumbering.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.AlignLeft" ToolTip="Align Left"> -->
-	 <!--          <Image Source="Images\ParagraphLeftJustify.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.AlignCenter" ToolTip="Align Center"> -->
-	 <!--          <Image Source="Images\ParagraphCenterJustify.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.AlignRight" ToolTip="Align Right"> -->
-	 <!--          <Image Source="Images\ParagraphRightJustify.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.AlignJustify" ToolTip="Align Justify"> -->
-	 <!--          <Image Source="Images\ParagraphFullJustify.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.IncreaseIndentation" ToolTip="Increase Indent"> -->
-	 <!--          <Image Source="Images\ParagraphIncreaseIndentation.png"></Image> -->
-	 <!--        </Button> -->
-	 <!--        <Button Style="{StaticResource formatImageStyle}" Command="EditingCommands.DecreaseIndentation" ToolTip="Decrease Indent"> -->
-	 <!--          <Image Source="Images\ParagraphDecreaseIndentation.png"></Image> -->
-	 <!--        </Button> -->
+		<!-- 	<Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf0c4;" Command="ApplicationCommands.Cut" ToolTip="Cut"/> -->
+		<!-- 	<Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf0c5;" Command="ApplicationCommands.Copy" ToolTip="Copy"/> -->
+		<!-- 	<Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf328;" Command="ApplicationCommands.Paste" ToolTip="Paste"/> -->
+		<!-- 	<Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf0e2;" Command="ApplicationCommands.Undo" ToolTip="Undo"/> -->
+		<!-- 	<Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf01e;" Command="ApplicationCommands.Redo" ToolTip="Redo"/> -->
+		<!-- 	 -->
+		<!-- 	<ToggleButton Style="{StaticResource FontAwesomeSolid}" Content="&#xf032;" Command="EditingCommands.ToggleBold" ToolTip="Bold"/> -->
+		<!-- 	<ToggleButton Style="{StaticResource FontAwesomeSolid}" Content="&#xf033;" Command="EditingCommands.ToggleItalic" ToolTip="Italic"/> -->
+		<!-- 	<ToggleButton Style="{StaticResource FontAwesomeSolid}" Content="&#xf0cd;" Command="EditingCommands.ToggleUnderline" ToolTip="Underline"/> -->
+		<!-- 	<ToggleButton Style="{StaticResource FontAwesomeSolid}" Content="&#xf031;" Command="EditingCommands.IncreaseFontSize" ToolTip="Grow Font"/> -->
+		<!-- 	<ToggleButton Style="{StaticResource FontAwesomeSolid}" Content="&#xf031;" FontSize="9" Command="EditingCommands.DecreaseFontSize" ToolTip="Shrink Font"/> -->
+ 	<!-- -->
+		<!-- 	<ToggleButton Style="{StaticResource FontAwesomeSolid}" Content="&#xf0ca;" Command="EditingCommands.ToggleBullets" ToolTip="Bullets"/> -->
+		<!-- 	<ToggleButton Command="EditingCommands.ToggleNumbering" Style="{StaticResource FontAwesomeSolid}" Content="&#xf0cb;" ToolTip="Numbering"/> -->
+		<!-- 	<ToggleButton Command="EditingCommands.AlignLeft" Style="{StaticResource FontAwesomeSolid}" Content="&#xf036;" ToolTip="Align Left"/> -->
+		<!-- 	<ToggleButton Command="EditingCommands.AlignCenter" Style="{StaticResource FontAwesomeSolid}" Content="&#xf037;" ToolTip="Align Center"/> -->
+		<!-- 	<ToggleButton Style="{StaticResource FontAwesomeSolid}" Content="&#xf038;" Command="EditingCommands.AlignRight" ToolTip="Align Right"/> -->
+		<!-- 	<ToggleButton Style="{StaticResource FontAwesomeSolid}" Content="&#xf039;" Command="EditingCommands.AlignJustify" ToolTip="Align Justify"/> -->
+		<!-- -->
+		<!-- 	<Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf03c;" Command="EditingCommands.IncreaseIndentation" ToolTip="Increase Indent"/> -->
+		<!-- 	<Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf03b;" Command="EditingCommands.DecreaseIndentation" ToolTip="Decrease Indent"/> -->
+		<!-- -->
 		<!-- </WrapPanel> -->
-		<RichTextBox x:Name="RichTextBox" AcceptsTab="True" SpellCheck.IsEnabled="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+	    <RichTextBox x:Name="RichTextBox" AcceptsTab="True" SpellCheck.IsEnabled="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
     </DockPanel>
 </UserControl>

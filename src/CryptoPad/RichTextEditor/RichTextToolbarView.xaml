@@ -1,0 +1,45 @@
+﻿<UserControl 
+	x:Class="KsWare.CryptoPad.RichTextEditor.RichTextToolbarView"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+	xmlns:local="clr-namespace:KsWare.CryptoPad.RichTextEditor"
+	mc:Ignorable="d" 
+	d:DesignHeight="60" d:DesignWidth="800">
+	<WrapPanel DockPanel.Dock="Top" >
+		<FrameworkElement.Resources>
+			<Style TargetType="{x:Type ButtonBase}" x:Key="FontAwesomeSolid">
+				<!-- <Setter Property="FontFamily" Value="Font Awesome 6 Free Solid"/> -->
+				<Setter Property="FontFamily" Value="Font Awesome 6 Free Solid"/>
+				<Setter Property="Width" Value="24"/>
+				<Setter Property="Height" Value="24"/>
+				<Setter Property="FontSize" Value ="14"/>
+				<Setter Property="CommandTarget" Value="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=CommandTarget}"/>
+			</Style>
+		</FrameworkElement.Resources>
+		<Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf0c4;" Command="ApplicationCommands.Cut" ToolTip="Cut"/>
+        <Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf0c5;" Command="ApplicationCommands.Copy" ToolTip="Copy"/>
+        <Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf328;" Command="ApplicationCommands.Paste" ToolTip="Paste"/>
+        <Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf0e2;" Command="ApplicationCommands.Undo" ToolTip="Undo"/>
+        <Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf01e;" Command="ApplicationCommands.Redo" ToolTip="Redo"/>
+		<Canvas Width="3"></Canvas>
+
+        <ToggleButton x:Name="ToggleBold" Style="{StaticResource FontAwesomeSolid}" Content="&#xf032;" Command="EditingCommands.ToggleBold" ToolTip="Bold"/>
+        <ToggleButton x:Name="ToggleItalic" Style="{StaticResource FontAwesomeSolid}" Content="&#xf033;" Command="EditingCommands.ToggleItalic" ToolTip="Italic"/>
+        <ToggleButton x:Name="ToggleUnderline" Style="{StaticResource FontAwesomeSolid}" Content="&#xf0cd;" Command="EditingCommands.ToggleUnderline" ToolTip="Underline"/>
+        <Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf031;" Command="EditingCommands.IncreaseFontSize" ToolTip="Grow Font"/>
+        <Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf031;" FontSize="9" Command="EditingCommands.DecreaseFontSize" ToolTip="Shrink Font"/>
+ 
+        <ToggleButton x:Name="ToggleBullets" Style="{StaticResource FontAwesomeSolid}" Content="&#xf0ca;" Command="EditingCommands.ToggleBullets" ToolTip="Bullets"/>
+        <ToggleButton x:Name="ToggleNumbering" Style="{StaticResource FontAwesomeSolid}" Content="&#xf0cb;" Command="EditingCommands.ToggleNumbering" ToolTip="Numbering"/>
+		<Canvas Width="3"></Canvas>
+		<ToggleButton x:Name="AlignLeft" Style="{StaticResource FontAwesomeSolid}" Content="&#xf036;" Command="EditingCommands.AlignLeft" ToolTip="Align Left"/>
+        <ToggleButton x:Name="AlignCenter" Style="{StaticResource FontAwesomeSolid}" Content="&#xf037;" Command="EditingCommands.AlignCenter" ToolTip="Align Center"/>
+		<ToggleButton x:Name="AlignRight" Style="{StaticResource FontAwesomeSolid}" Content="&#xf038;" Command="EditingCommands.AlignRight" ToolTip="Align Right"/>
+        <ToggleButton x:Name="AlignJustify" Style="{StaticResource FontAwesomeSolid}" Content="&#xf039;" Command="EditingCommands.AlignJustify" ToolTip="Align Justify"/>
+		<Canvas Width="3"></Canvas>
+        <Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf03c;" Command="EditingCommands.IncreaseIndentation" ToolTip="Increase Indent"/>
+        <Button Style="{StaticResource FontAwesomeSolid}" Content="&#xf03b;" Command="EditingCommands.DecreaseIndentation" ToolTip="Decrease Indent"/>
+	</WrapPanel>
+</UserControl>

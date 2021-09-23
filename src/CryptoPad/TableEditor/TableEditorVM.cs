@@ -5,6 +5,7 @@ using System.Text;
 using System.Windows;
 using JetBrains.Annotations;
 using KsWare.CryptoPad.Dialogs;
+using KsWare.CryptoPad.RichTextEditor;
 using KsWare.Presentation.ViewModelFramework;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.Win32;
@@ -27,7 +28,11 @@ namespace KsWare.CryptoPad.TableEditor {
 
 			Editor.ContentChanged += (s, e) => HasChanges = true;
 		}
-		public DataGridControllerVM Editor { get; [UsedImplicitly] private set; }
+
+		public new DataGridControllerVM Editor {
+			get => (DataGridControllerVM)base.Editor;
+			private set => base.Editor = value;
+		}
 
 		/// <param name="password"></param>
 		/// <inheritdoc />
